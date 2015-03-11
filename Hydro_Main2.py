@@ -8,7 +8,6 @@ import numpy
 import Water_Level
 import Temperature
 import Hydrodynamic
-from fastcluster import average
 
 
 
@@ -42,59 +41,9 @@ class switch(object):
 paths = {1:'/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Hobo-Apr-Nov-2013/WL/csv_press_corr',
        2:'/home/bogdan/Documents/UofT/PhD/Data_Files/2013/ADCP-TorHarb',
        3:'/home/bogdan/Documents/UofT/PhD/Data_Files/2013/ADCP-TorHarb/PC-ADP/processed',
-       4:'/home/bogdan/Documents/UofT/PhD/Data_Files/2010/Toberymory_tides',
-       5:'/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Volume-Calculations',
-       6:'/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Carleton-Nov2013/csv_processed'}
+       4:'/home/bogdan/Documents/UofT/PhD/Data_Files/2010/Toberymory_tides'}
 
 #-----------------------------------------------------------------------------------------------------
-
-
-def Temp_FFT_analysis_all():
-    print "WL fft analysis"
-    filenames = {'Stn41':'Station41November.csv',
-                 }
-
-    tpath = paths[6]
-    num_segments = 10
-    ta = Temperature.Temperature(tpath, filenames, num_segments)
-    for key in sorted(ta.getDict().iterkeys()):
-        fname = ta.getDict()[key]
-
-        [dates, depths] = ta.read_temp_file(tpath, fname)
-
-        # plot the original Lake oscillation input
-        #xlabel = 'Time (days)'
-        #ylabel = 'Z(t) (m)'
-        #ts_legend = [key + ' - water levels [m]']
-        #ta.plotTimeSeries("Lake levels", xlabel, ylabel, dates, depths, ts_legend)
-        # end plot
-
-        tunits = 'day'
-        window = 'hanning'
-        log = False
-        filter = None
-        [y, Time, fftx, NumUniquePts, mx, f, power, x05, x95] = \
-            ta.doFFTSpectralAnalysis(dates, depths, tunits = tunits, window = window, filter = filter, log = log)
-
-        data = []
-        data.append([mx])
-        data.append([key])
-        data.append([x05])
-        data.append([x95])
-        data.append([f])
-
-        y_label = 'Temperature [$^\circ$C]'
-        title = 'Single-Sided Amplitude Spectrum vs freq'
-        funits = 'cph'
-        logarithmic = False
-        grid = True
-        plottitle = False
-        ymax = None  # 0.01
-        ta.plotSingleSideAplitudeSpectrumFreq(data, funits = funits, y_label = y_label, title = title, log = logarithmic, \
-                                            fontsize = 20, tunits = tunits, plottitle = plottitle, grid = grid, \
-                                            ymax = ymax)
-
-        wla.plotWaveletScalogram(dates, depths, tunits, title = title)
 
 def WL_FFT_analysis_all():
     print "WL fft analysis"
@@ -209,7 +158,7 @@ def Vel_FFT_pairs(date, plotFFT = True, skipRDI = False):
 def get_Dz_Dt(adptype, path, num_segments, date, dt):
      # get the water level variations dz
     print "WL analysis"
-    filenames = {'OH':'10279444_corr.csv', 'EmbC':'10238147_corr.csv', 'Cell3':'10279699_corr.csv', 'Cell1':'10279696_corr.csv', 'Cell2':'10279693_corr.csv'}
+    filenames = {'OH':'10279444_corr.csv', 'EmbC':'10238147_corr.csv', 'Cell3':'10279699_corr.csv'}
     num_segments = 10
     wla = Water_Level.WaterLevelAnalysis(path, filenames, num_segments, date)
    
@@ -494,23 +443,16 @@ def subpl_wl_dz_vel(date, adptype, resampled = False, hourgrid = False, doy = Fa
 
     rup = []
     if img:
-        #imgs do not resample
         if adptype == "OH":
-            up = up[:-3].tolist()
-        elif adptype == "EmbC":
-            up = up[:-2].tolist()
-        elif adptype == "Cell3": 
-            up = up[:-1].tolist()
+            up = up[:-3]
+        #=======================================================================
+        # if resampled:
+        #     for i in range(0,len(up)):
+        #         rutime,rupi = hyd.resample(hyd.time, up, dt, i)
+        #         rup.append(rupi[:-10])
+        #=======================================================================
         else:
-            up = up.tolist()
-                
-        if resampled:
-            for i in range(0,len(up)):
-                rutime,rupi = hyd.resample(hyd.time, up, dt, i)
-                rup.append(rupi[:-10])
-            rutime = rutime[:-10]
-        else:
-            rup=up
+            rup = up
     else:
         if resampled:
             rutime, rup0 = hyd.resample(hyd.time, up, dt, bins[adptype][0])
@@ -523,7 +465,7 @@ def subpl_wl_dz_vel(date, adptype, resampled = False, hourgrid = False, doy = Fa
             rup.append(up[bins[adptype][0]])
             rup.append(up[bins[adptype][1]])
             rup.append(up[bins[adptype][2]])
-    
+        
     # 2 get Dz
     daterange = [date[0], date[-1]]
     wla, rtime, rdepths, rdzdt, dates, depths, dzdt = get_Dz_Dt(adptype, paths[1], num_segments, daterange, dt)
@@ -544,183 +486,17 @@ def subpl_wl_dz_vel(date, adptype, resampled = False, hourgrid = False, doy = Fa
         dataarr.append(rdzdt[:-10])
         dataarr.append(rup)
         date = rtime[:-10]
-        dateImg = rutime
     else:    
         dataarr.append(depths[:-1])
         dataarr.append(dzdt[:-1])
         dataarr.append(rup)
         date = dates[:-1]
-        if type(hyd.time[0]) is list:
-            dateImg = hyd.time[0]
-        else:
-            dateImg = hyd.time[0].tolist()
-    labels = ['Z [$m$]', 'dz/dt [$m$]matplotlib','velocity [$m s^{-1}$]']
-    
-    hyd.display_subplots(date, dateImg, dataarr, dnames = labels, yday = doy, tick = None, legend = legend, hourgrid = hourgrid, img=img, cbrange=cbrange, maxdepth = maxdepth[adptype])
-
-def calc_velocities(adptype, date, avg=True, interv = 1, resampled =False):
-    '''
-    Calculates the Depth averaged velocity at the vertical of the ADCP
-    @param interv: = 1 #hours
-    @param avg: False/True. False: calculate the velocity per vertical slice every interval; 
-                            True : calculate one average velocity per whole section every interval
-    '''
-    # 1 Get velocities
-     #angles_from_N = {'OH':37, 'EmbC':127,'Cell3':137}    # for clockwise
-                                                          # + sign is into Cell3   and to Cherry beach
-    angles_from_N = {'OH':143, 'EmbC':53,'Cell3':43}      # for counter clockwise  
-                                                          #+ direction is TO outer harbour and to Lake Ontario 
-    CrossArea = {'OH':7500, 'EmbC':300,'Cell3':110}
-    
-    num_segments = 10
-    factor  = 1./interv #factor = 1. id inter =  1 hour ; factor = 6.  # 10 minutes  in days
-    
-    dt = 1. / 24. / factor
-    hyd = get_Velocities(adptype, date, num_segments)
-
-    #reproject on the direction of thde flow
-    Theta = angles_from_N[adptype] #35.1287  # degrees
-    tet = 2 * math.pi * Theta / 360
-    up, vp = hyd.rotation_transform(tet, clockwise=False)
-
-
-
-    rup = []
-    for i in range(0, hyd.goodbins):
-        if resampled:
-            rutime, rup0 = hyd.resample(hyd.time, up, dt, i)
-            rup.append(rup0[:-10])
-        else:
-            rup.append(up[i])
-    
-    tottime=0
-     
-    if avg:
-        pos_vel= []
-        neg_vel= []
         
-        if resampled:
-            time = rutime
-            vel = numpy.array(rup)
-            dt0 = (rutime[2] - rutime[1])
-            lenght = len(time[:-10])
-        else:
-            time = hyd.time
-            vel= numpy.array(up)
-            dt0 = (time[0][2] - time[0][1])
-            lenght = len(time[0])
-        
-        vel_T = numpy.transpose(vel)
-        for j in range(0, lenght):
-            #Mean Depth Averaged Velocity
-            mvel = numpy.mean(vel_T[j])
-            tottime +=dt0
-            if mvel > 0: 
-                pos_vel.append(mvel)
-            else: 
-                neg_vel.append(mvel)    
-            
-    volplus =  CrossArea[adptype]*numpy.sum(numpy.array(pos_vel)*dt0)*84600   
-    volminus =  CrossArea[adptype]*numpy.sum(numpy.array(neg_vel)*dt0)*84600
+    labels = ['Z [$m$]', 'dz/dt [$m$]','velocity [$m s^{-1}$]']
 
-    print "Loc=%s Vol+=%f m^3  Vol-=%f m^3" % (adptype, volplus, volminus)
-    qplus=volplus/tottime 
-    qminus=volminus/tottime
-    print "Loc=%s Q+=%f m^3/day Q-=%f m^3/day" % (adptype, qplus, qminus)
-    fname = paths[5] + "/"+ adptype+"volumes.csv"
-    data = [adptype, date, qplus, qminus]
-    hyd.writeVeltoCSV(fname, data, append = True)
-    return qplus, qminus
+    hyd.display_subplots(date, hyd.time[0], dataarr, dnames = labels, yday = doy, tick = None, legend = legend, hourgrid = hourgrid, img=img, cbrange=cbrange, maxdepth = maxdepth[adptype])
 
-def calc_flush_time(adptype, date, level, avg=True, interv = 1, resampled =False, umaxcorr= True):
-    filemapping = {"Cell3": 'Cell3_Elev_level_maxdepth_volume_area.csv', 
-                   "EmbC":'EmbC_Elev_level_maxdepth_volume_area.csv', 
-                   "OH":'OuterHarbourElev_level_maxdepth_volume_area.csv' }
-                   #"OH":'InnerOuterHarbourElev_level_maxdepth_volume_area.csv' }    
-    qplus, qminus = calc_velocities(adptype, date, avg=avg, interv = interv, resampled=resampled)
-    if umaxcorr:
-        # From On the Distribution of Velocity in a V-shaped channel M. A Mohammadi, Civil Engineering Vol 16. No 1 pp 78-86
-        qplus_corr = qplus/1.1934
-        qminus_corr = qminus/1.1934
-    else:
-        qplus_corr = qplus
-        qminus_corr = qminus
-        
-    fname = paths[5] + "/"+ filemapping[adptype]
-    maxdepth, volume, area = Hydrodynamic.Hydrodynamic.ReadVolfromCSV(fname, level)
-    FDT = volume/((qplus_corr-qminus_corr)/2)
-    print "%s  Flusing time scale = %f [days]" % (adptype, FDT)
-    fname = paths[5] + "/"+ adptype+"_FDT.csv"
-    Hydrodynamic.Hydrodynamic.writeVeltoCSV(fname, [adptype, date, "Flushing TS [days]", FDT], append = True)
 
-def calc_velocities_by_dh(adptype, date, avg=True, interv = 1, resampled =False, filemapping = None):
-    maxdepth = {'OH':6.5, 'EmbC':5.0,'Cell3':4.5}
-    pairs = {'Cell1':["Cell1", "Cell2"], 
-             'Cell2':["Cell2", "Cell3"],
-             'Cell3':["Cell3", "EmbC"],
-             'EmbC':["EmbC", "OH"],
-             'OH':["OH", "LO"]}
-    
-    num_segments = 10
-    
-    factor = 6.  # 10 minutes  in days
-    #factor = 1.  # 1 hour in days
-    dt = 1. / 24. / factor
-
-    # 2 get Dz
-    daterange = [date[0], date[-1]]
-    wla1, rtime1, rdepths1, rdzdt1, dates1, depths1, dzdt1 = get_Dz_Dt(pairs[adptype][0], paths[1], num_segments, daterange, dt)
-    #wla2, rtime2, rdepths2, rdzdt2, dates2, depths2, dzdt2 = get_Dz_Dt(pairs[adptype][1], paths[1], num_segments, daterange, dt)
-    
-    fname = paths[5] + "/"+ filemapping[adptype]
-    maxdepth, volume, area = Hydrodynamic.Hydrodynamic.ReadVolfromCSV(fname, level)
-    
-    volplus=0
-    volminus=0
-    tottime=0
-    for i in range(0, len(dates1)-1):
-        dz = depths1[i+1]-depths1[i]  
-        V=area*dz
-        tottime +=dates1[1]-dates1[0]  
-        if V> 0:
-            volplus+=V
-        else:
-            volminus+=V
-    
-    qplus=volplus/tottime 
-    qminus=volminus/tottime
-    
-    print "Loc=%s Q+=%f m^3/day Q-=%f m^3/day" % (adptype, qplus, qminus)
-    return qplus, qminus
-
-    
-    #add one more to dzdt since is intepolated between nodes and prfiles are on nodes.
-
-def calc_flush_time_by_dh(adptype, date, level, avg=True, interv = 1, resampled =False, umaxcorr= True):
-    filemapping = {"Cell1": 'Cell1_Elev_level_maxdepth_volume_area.csv',
-                   "Cell2": 'Cell2_Elev_level_maxdepth_volume_area.csv',
-                   "Cell3": 'Cell3_Elev_level_maxdepth_volume_area.csv', 
-                   "EmbC":'EmbC_Elev_level_maxdepth_volume_area.csv', 
-                   "OH":'OuterHarbourElev_level_maxdepth_volume_area.csv' }
-                   #"OH":'InnerOuterHarbourElev_level_maxdepth_volume_area.csv' }    
-    qplus, qminus = calc_velocities_by_dh(adptype, date, avg=avg, interv = interv, resampled=resampled, filemapping=filemapping)
-        
-    fname = paths[5] + "/"+ filemapping[adptype]
-    maxdepth, volume, area = Hydrodynamic.Hydrodynamic.ReadVolfromCSV(fname, level)
-    FDT = volume/((qplus-qminus)/2)
-    print "%s  Flusing time scale = %f [days]" % (adptype, FDT)
-    fname = paths[5] + "/"+ adptype+"_DZ_FDT.csv"
-    Hydrodynamic.Hydrodynamic.writeVeltoCSV(fname, [adptype, date, "Flushing TS [days]", FDT], append = True)
-
-def convert_wl_to_delft3d_tim(path,fn,step_min, date,start_WL, timesince2001):
-    num_segments = 4
-    wla = Water_Level.WaterLevelAnalysis(path, [fn], num_segments, date)
-    wla.convert_wl_to_delft3d_tim(path, fn, step_min,start_WL, timesince2001)
-
-def calculate_min_since_20010101000000(path,fn, step_min, date):
-    wla = Water_Level.WaterLevelAnalysis(path, [fn], 1, date)
-    return wla.calculate_min_since_20010101000000(step_min)
-    
 if __name__ == '__main__':
 
     date = ['13/06/25 00:00:00', '13/08/16 00:00:00']  # this interval is needed to cover completely the intersection between velocity data and water level data
@@ -737,17 +513,10 @@ if __name__ == '__main__':
     #v = 'vel_fft_pairs'
     #v = 'wl_fft_pairs'
     #v = 'plot_fft_v_T_wl'
-    v = 'calc_vel'
-    v = 'calc_vel_dh' 
-    #v = 'temp_fft_all'
-    v = 'conv_wl_delft3d_min'
     # map the inputs to the function blocks
     for case in switch(v):
         if case('wl_fft_all'):
             WL_FFT_analysis_all()
-            break
-        if case('temp_fft_all'):
-            Temp_FFT_analysis_all()
             break
         if case('wl_fft_pairs'):
             WL_FFT_pairs()
@@ -771,7 +540,7 @@ if __name__ == '__main__':
             
             # for long progressive vector diagram - hodograph
             date = ['13/07/15 00:00:00', '13/07/27 00:00:00']  
-            factor = 1.  # 1 hour in dayslayer subplot with:
+            factor = 1.  # 1 hour in days
             factor = 6.  # 10 minutes  in days
             dt = 1. / 24. / factor
             #modd = None
@@ -784,7 +553,7 @@ if __name__ == '__main__':
         if  case ('vel-profiles'):
             #location can be 'Cell3' 'EmbC' 'OH'
             location = 'Cell3' 
-            #location = 'EmbC'
+            location = 'EmbC'
             #location = 'OH' 
             save = True
             showWL=True
@@ -849,64 +618,21 @@ if __name__ == '__main__':
         if case ('subpl_wl_dz_vel'):
             date = ['13/06/25 00:00:00', '13/08/16 00:00:00']    # TOO LONG
             date = ['13/07/18 00:00:00', '13/07/30 00:00:00']    # shows enough of storm and quiet
-            date = ['13/07/24 00:00:00', '13/07/24 23:00:00']    # one day shows hourly alternation in DZ
-            #date = ['13/07/19 23:00:00', '13/07/21 13:00:00']    # stormy period
+            #date = ['13/07/24 00:00:00', '13/07/24 23:00:00']    # one day shows hourly alternation in DZ
+            date = ['13/07/19 23:00:00', '13/07/21 13:00:00']    # stormy period
             resampled = False
             hourgrid = True
-            DOY = False
+            DOY = True
             img=True
-            location = "EmbC"
-            subpl_wl_dz_vel(date, location, resampled, hourgrid, doy = DOY, img=img, cbrange=[-0.5,0.5])
+            location = "Cell3"
+            subpl_wl_dz_vel(date, location, resampled, hourgrid, doy = DOY, img=img, cbrange=[None, None]) # cbrange=[-0.5,0.5])
             break
         if case ('plot_fft_v_T_wl'):
             date = ['13/06/25 00:00:00', '13/08/16 00:00:00']    # TOO LONG
             location = "OH"
             #location ="Cell3"
-            location="EmbC"
             drawslope = False
             plot_FFT_V_T_WL(location, date, scale = 'log', drawslope = drawslope)
-            break
-        if case ('calc_vel'):
-            date = ['13/06/25 00:00:00', '13/08/16 00:00:00']    # TOO LONG
-            date = ['13/08/10 00:00:00', '13/08/20 23:00:00']    # Upwelling
-            #date = ['13/07/29 00:00:00', '13/08/11 00:00:00']    # quiet warm
-            #date = ['13/06/19 00:00:00', '13/06/30 00:00:00']    # quiet cold
-            
-            interv = 1 #hours
-            avg = True # False calculat the vel per veritcal slice; True = calucalte one avg vel per whole section
-            loc="OH"
-            #loc="Cell3"
-            #loc="EmbC"
-            level = 74
-            #calc_velocities(loc,date, avg=avg, interv=interv, resampled = False)
-            calc_flush_time(loc, date, level, avg=avg, interv = interv, resampled =False)
-            break
-        if case ('calc_vel_dh'):
-            date = ['13/06/25 00:00:00', '13/08/16 00:00:00']    # TOO LONG
-            date = ['13/08/10 00:00:00', '13/08/20 23:00:00']    # Upwelling
-            #date = ['13/07/29 00:00:00', '13/08/11 00:00:00']    # quiet warm
-            date = ['13/06/19 00:00:00', '13/06/30 00:00:00']    # quiet cold
-            
-            interv = 1 #hours
-            avg = True # False calculat the vel per veritcal slice; True = calucalte one avg vel per whole section
-            loc="OH"
-            #loc="Cell3"
-            #loc="EmbC"
-            #loc="Cell2"
-            #loc="Cell1"
-            level = 74
-            #calc_velocities(loc,date, avg=avg, interv=interv, resampled = False)
-            calc_flush_time_by_dh(loc, date, level, avg=avg, interv = interv, resampled =False)
-            break
-        if case ("conv_wl_delft3d_min"):
-            date = ['13/06/25 00:00:00', '13/08/16 00:00:00']    # TOO LONG
-            start_WL = {'13/06/25 00:00:00':75.16}
-            pathwl=paths[1]
-            fn="10279444_corr.csv"
-            step_min = 60
-            ta = calculate_min_since_20010101000000(pathwl, fn, step_min, date)
-            print ta
-            convert_wl_to_delft3d_tim(pathwl, fn, step_min, date, start_WL[date[0]], ta)
             break
         if case():  # default, could also just omit condition or 'if True'
             print ("something else!")

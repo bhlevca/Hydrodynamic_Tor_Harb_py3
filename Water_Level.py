@@ -9,23 +9,29 @@ import math
 import matplotlib.mlab as mlab
 import csv
 from scipy import fftpack
-
+from datetime import datetime
+import matplotlib.dates as dates
 # local imports
 import ufft.fft_utils as fft_utils
 import wavelets.kCwt
 import ufft.filters
 import ufft.FFTGraphs as FFTGraphs
+import utools.display_data as display_data
+import ufft.smooth as smooth
 
 class WaterLevelAnalysis(object):
     '''
     classdoc
     '''
 
-    def __init__(self, path, filenames, numsegments):
+    def __init__(self, path, filenames, numsegments, tinterv = None):
         self.path = path
         self.dict = filenames
         self.num_segments = numsegments
-
+        if tinterv != None:
+            self.date = [tinterv[0], tinterv[1]]
+        else:
+            self.date = None
     def getDict(self):
         return self.dict
 
@@ -35,6 +41,13 @@ class WaterLevelAnalysis(object):
         :param path: -- path to the file location
         :param fname: -- file name
         '''
+
+        if self.date != None:
+            dtime = datetime.strptime(self.date[0], "%y/%m/%d %H:%M:%S")
+            startt = dates.date2num(dtime)
+            dtime = datetime.strptime(self.date[1], "%y/%m/%d %H:%M:%S")
+            endt = dates.date2num(dtime)
+
         ifile = open(path + '/' + fname, 'rb')
         reader = csv.reader(ifile, delimiter = ',', quotechar = '"')
         dateTime = []
@@ -43,6 +56,10 @@ class WaterLevelAnalysis(object):
         for row in reader:
             try:
                 time = float(row[0])
+
+                if self.date != None:
+                    if time < startt or time > endt:
+                        continue
                 dateTime.append(time)
                 depths.append(float(row[1]))
             except:
@@ -433,17 +450,163 @@ class WaterLevelAnalysis(object):
         # fftsa.plotCospectralDensity(log = log)
         # fftsa.plotPhase()
 
-        if b_wavelets:
-            # Wavelet Spectral analysis
-            graph = wavelets.Graphs.Graphs(path, filenames[0], filenames[1], show)
-            graph.doSpectralAnalysis()
-            graph.plotDateScalogram(scaleType = 'log', plotFreq = True, printtitle = plottitle)
-            graph.plotSingleSideAplitudeSpectrumTime(printtitle = plottitle)
-            graph.plotSingleSideAplitudeSpectrumFreq(printtitle = plottitle)
-            graph.showGraph()
-        # end if b_wavelets
+        
     # end SpectralAnalysis
 
+    def delta_z_resample(self, dates, depths, dt):
+        dt0 = (dates[2] - dates[1])
+        print "dt0=%f" % dt0
+
+        winlen = int(dt / dt0)
+        if not isinstance(depths, np.ndarray):
+            depths = np.array(depths)
+            dates = np.array(dates)
+
+        if winlen != 0 :
+            y, yd = smooth.smooth(depths, winlen)
+        else:
+            y = depths
+        y = depths
+        rdepths = sp.ndimage.interpolation.zoom(y, float(dt0 / dt))
+        rtime = sp.ndimage.interpolation.zoom(dates, float(dt0 / dt))
+        rdzdt = [(rdepths[j + 1] - rdepths[j]) for j in range(0, len(rdepths) - 1) ]
+        rdzdt.append((rdzdt[-1]+rdzdt[-2])/2)
+        dzdt = [(depths[j + 1] - depths[j]) for j in range(0, len(depths) - 1) ]
+        dzdt.append((dzdt[-1]+dzdt[-2])/2)
+        
+        return rtime, rdepths, rdzdt, dzdt
+
+    def delta_z_mov_average(self, dates, depths, dt):
+        dt0 = (dates[2] - dates[1])
+        print "dt0=%f" % dt0
+
+        winlen = int(dt / dt0)
+        if not isinstance(depths, np.ndarray):
+            depths = np.array(depths)
+            dates = np.array(dates)
+
+        weigths = np.repeat(1.0, winlen)/winlen
+        #including valid will REQUIRE there to be enough datapoints.
+        #for example, if you take out valid, it will start @ point one,
+        #not having any prior points, so itll be 1+0+0 = 1 /3 = .3333
+        rdepths = np.convolve(depths, weigths, 'valid')
+        rtime = sp.ndimage.interpolation.zoom(dates, float(dt0 / dt))
+        dzdt = [(rdepths[j + 1] - rdepths[j]) for j in range(0, len(rdepths) - 1) ]
+        dzdt.append(dzdt[-1])
+        dzdta = np.array(dzdt)
+        return rtime, dzdta
+
+
+    def plot_dzdt_up_line(self, up, dzdt, labels):
+        display_data.display_scatter(up, dzdt, slope = True, type = 'stats' , labels = labels)
+
+
+    def plot_cross_spectogram_u_dz(self, t, w, tt, dz, scaleunit = 'day', da = [6, 300]):
+        '''
+        Plot the  cross wavelet spectrogram between the ADCP velocity and Temperature
+        :param t : velocity time array
+        :param w : longitudinal velocity
+        :param tt : wl time array
+        :param dz : dz/dt - water level variation
+        '''
+        print "Start cross spectrum analysis"
+
+
+        # w = u + 1j * v
+        if len(w) != len(dz):
+            ratio = len(w) / len(T)
+            print "len w: %d | len t: %d | len tt: %d | len T: %d" % (len(w), len (t), len(tt), len(dz))
+            print "ratio: %f" % ratio
+            oldrange = range(0, ratio * len(t), ratio)
+            print "len(oldrange) :%d" % len(oldrange)
+            idz = numpy.interp(t, tt, dz)
+            # iT2 = numpy.interp(range(0, ratio * len(t)), oldrange), T)
+            print "len w: %d | len iT: %d |  len T: %d" % (len(w), len(idz), len(dz))
+            tt = t
+        else:
+            idz = dz
+
+
+        kwavelet = wavelets.kCwt.kCwt(t, w, tt, idz, scaleunit, False, True)
+        dj = 0.05  # Four sub-octaves per octaves
+        s0 = -1  # 2 * dt                              # Starting scale, here 6 months
+        J = -1  # 7 / dj                               # Seven powers of two with dj sub-octaves
+        alpha = 0.5  # Lag-1 autocorrelation for white noise
+        slevel = 0.95
+        val1, val2 = (0, 520000)  # Range of sc_type (ex periods) to plot in spectogram
+        avg1, avg2 = (0, 520000)  # Range of sc_type (ex periods) to plot in spectogram
+        title = "Cross vel-dz/dt spectrum"
+        print title + "start: Monte Carlo"
+        kwavelet.doCrossSpectralAnalysis(title, "morlet", slevel, avg1, avg2, dj, s0, J, alpha)
+        print title + "end: Monte Carlo"
+
+        ylabel_ts = "PSD"
+        yunits_ts = 'm/s'
+        xlabel_sc = ""
+        ylabel_sc = 'Period [%s]' % kwavelet.wpar1.tunits
+        sc_type = "period"
+        # sc_type = "freq"
+        # x_type = 'date'
+        x_type = 'dayofyear'
+
+
+        print  "#plot cross wavelet spectrogram"
+        kwavelet.plotXSpectrogram(kwavelet.get_xwt(), extend = 'both', x_type = x_type, ylabel_sc = ylabel_sc, da = da,
+                      tfactor = kwavelet.wpar1.tfactor, scale = 'linear')
+
+        print  "plot coherence wavelet spectrogram"
+        kwavelet.plotXSpectrogram(kwavelet.get_wct(), extend = 'neither', x_type = x_type, ylabel_sc = ylabel_sc, da = da,
+                      tfactor = kwavelet.wpar1.tfactor, crange = np.arange(0, 1.1, 0.1), scale = 'linear', angle = kwavelet.get_wct().angle)
+
+    def convert_wl_to_delft3d_tim(self, path, fn,step_min,start_WL, timesince2001):
+        
+        dtime = datetime.strptime(self.date[0], "%y/%m/%d %H:%M:%S")
+        st_strg = dtime.strftime("%y%m%d")
+        [dates, depths] = self.read_press_corr_file(path, fn)
+        
+        dt0 = (dates[2] - dates[1])           #days
+        print "dt0=%f" % dt0
+        dt = step_min/24./60.                 #convert into days
+        winlen = int(dt / dt0)
+        if not isinstance(depths, np.ndarray):
+            depths = np.array(depths)
+            dates = np.array(dates)
+
+        weigths = np.repeat(1.0, winlen)/winlen
+        #including valid will REQUIRE there to be enough datapoints.
+        #for example, if you take out valid, it will start @ point one,
+        #not having any prior points, so itll be 1+0+0 = 1 /3 = .3333
+        rdepths = np.convolve(depths, weigths, 'valid')
+        rtime = sp.ndimage.interpolation.zoom(dates, float(dt0 / dt))
+        
+        #write to 
+        outfn=path+"/"+ st_strg + fn+".tim"
+        ofile = open(outfn, "wb")
+        writer = csv.writer(ofile, delimiter = '\t', quotechar = '"', quoting = csv.QUOTE_MINIMAL)
+        #convert time to min starting from 0
+        start = rtime[0]
+        deltawl = start_WL - rdepths[0]
+        for i in range(len(rtime)-1):
+            rtime[i] = int((rtime[i]-start)*24*60)           #convett to min
+            tm = "%d" % rtime[i]
+            rdp = "%.3f" % (rdepths[i] + deltawl)
+            writer.writerow([tm, timesince2001[i], rdp])
+        ofile.close    
+       
+    def calculate_min_since_20010101000000(self, step_min):
+        d1 = datetime.strptime(self.date[0], "%y/%m/%d %H:%M:%S")
+        d2001 = datetime(2001,01,01,00,00,00)
+        d2 = datetime.strptime(self.date[1], "%y/%m/%d %H:%M:%S")
+        dt= d1-d2001
+        totmin1 = int(dt.total_seconds()/60)
+        dt= d2-d2001
+        totmin2 = int(dt.total_seconds()/60)
+        timearr = []
+        for i in range(totmin1,totmin2, step_min):
+            timearr.append(i)
+        return timearr
+        
+       
 if __name__ == '__main__':
     path = '/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Hobo-Apr-Nov-2013/WL/csv_press_corr'
     filenames = {'Emb A':'10279443_corr.csv',

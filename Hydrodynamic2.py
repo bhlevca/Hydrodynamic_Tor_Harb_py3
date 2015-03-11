@@ -44,7 +44,6 @@ class Hydrodynamic(object):
         self.results_z = None
         self.time = None
         self.locname = sitename
-        self.goodbins = 0
         if tinterv != None:
             self.date = [tinterv[0], tinterv[1]]
 
@@ -107,12 +106,11 @@ class Hydrodynamic(object):
         
 
     def readPcAdpVel(self):
-        velocities, timevec, goodbins = self.pcadp.readVel()
+        velocities, timevec = self.pcadp.readVel()
         self.results_u = velocities['ve']
         self.results_v = velocities['vn']
         self.results_z = velocities['vu']
         self.time = timevec
-        self.goodbins = goodbins
         # for vel in velocities
 
 
@@ -127,7 +125,6 @@ class Hydrodynamic(object):
                 #     readRawBinADCP(self.path + '/' + self.filename, 1, [10000, 19800], 'info', 'yes', 'baseyear', 2000, 'despike', 'yes', 'debug', 'no')
                 #===============================================================
             self.adcp.goodbins = numpy.int(self.adcp.depth[0][500] - self.adcp.config.bin1_dist)+2
-            self.goodbins=self.adcp.goodbins
         finally:
             print('Read took %.03f sec.' % t.interval)
 
@@ -261,7 +258,7 @@ class Hydrodynamic(object):
                                                              log = log, fontsize = 24, tunits = tunits)
 
     def rotation_transform(self, tet, clockwise=False):
-        if self.results_u is not None:
+        if self.results_u != None:
             return plot_ADCP_velocity.rotation_transform(self.results_u, self.results_v, tet, clockwise=clockwise)
         print 'Velocity values not read!'
         raise Exception("Velocity values not read!")
@@ -305,8 +302,8 @@ class Hydrodynamic(object):
             plot_ADCP_velocity.print_profile(name, profiles[i], datetimes[i], firstbin, \
                                              Xrange= Xrange, Yrange=Yrange, interval = interval, spline=True, save = save, dzdt = dzdt[i])
             
-    def display_subplots(self, date, dateIg, dataarr, dnames = None, yday = None, tick = None, legend = None, hourgrid = False, img=False, cbrange = [-1,1], maxdepth=5.0):    
-        plot_ADCP_velocity.display_subplots(date, dateIg, dataarr, dnames = dnames, yday = yday, tick = tick, legend = legend, hourgrid = hourgrid, \
+    def display_subplots(self, date, date2, dataarr, dnames = None, yday = None, tick = None, legend = None, hourgrid = False, img=False, cbrange = [-1,1], maxdepth=5.0):    
+        plot_ADCP_velocity.display_subplots(date, date2, dataarr, dnames = dnames, yday = yday, tick = tick, legend = legend, hourgrid = hourgrid, \
                                             img=img, cbrange = cbrange, maxdepth= maxdepth, minorlabel=False)  
         
     def plot_FFT_V_T_WL(self, time, V, Ttime, T, WL, WTime, scale = 'log', drawslope = False ):
@@ -317,32 +314,5 @@ class Hydrodynamic(object):
         span_window = utools.windows.window_hour
         smooth_window = utools.windows.windows[1]
         return readTempHoboFiles.get_data_from_file(fname, span_window, smooth_window, timeinterv , rpath = rpath)
-    
-    @staticmethod
-    def estimate_vel(ua, a, y):
-        '''
-        Engineering, 2013, 5, 933-942
-        Published Online December 2013 (http://www.scirp.org/journal/eng)
-        http://dx.doi.org/10.4236/eng.2013.512114
-        Open Access ENG
-        Power Law Exponents for Vertical Velocity Distributions in Natural Rivers
-        Hae-Eun Lee, Chanjoo Lee, Youg-Jeon Kim,, Ji-Sung Kim2, Won Kim2
-        
-        estimate the velofity at a 
-        @param y: distance form bottom when
-        @param ua : konw velocity ar
-        @param a: known distance abouve the bottom
-        
-        '''
-        u = ua * (y/a)**(1/1.2)
-        return u
-    
-    @staticmethod
-    def writeVeltoCSV(fname, data, append =False):
-        plot_ADCP_velocity.writeVeltoCSV(fname, data, append)
-    
-    @staticmethod    
-    def ReadVolfromCSV(fname, level):
-        return plot_ADCP_velocity.ReadVolfromCSV(fname, level)
   
         
