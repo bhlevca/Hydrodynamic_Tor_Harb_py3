@@ -64,8 +64,8 @@ def WL_FFT_analysis_all():
         [dates, depths] = wla.read_press_corr_file(paths[1], fname)
 
         # plot the original Lake oscillation input
-        xlabel = 'Time (days)'
-        ylabel = 'Z(t) (m)'
+        xlabel = 'Time [days]'
+        ylabel = 'Z(t) [m]'
         ts_legend = [key + ' - water levels [m]']
         wla.plotTimeSeries("Lake levels", xlabel, ylabel, dates, depths, ts_legend)
         # end plot
@@ -84,7 +84,7 @@ def WL_FFT_analysis_all():
         data.append([x95])
         data.append([f])
 
-        y_label = '|Z(t)| (m)'
+        y_label = '|Z(t)| [m]'
         title = 'Single-Sided Amplitude Spectrum vs freq'
         funits = 'cph'
         logarithmic = False

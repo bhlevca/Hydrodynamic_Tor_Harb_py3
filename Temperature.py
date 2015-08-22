@@ -3,7 +3,9 @@ Created on Nov 20, 2014
 
 @author: bogdan
 '''
-
+from mpl_toolkits.mplot3d import Axes3D
+from matplotlib import cm
+import matplotlib.pyplot as plt
 import scipy as sp
 import numpy as np
 import math
@@ -16,7 +18,9 @@ import ufft.fft_utils as fft_utils
 import wavelets.kCwt
 import ufft.FFTGraphs as FFTGraphs
 import utools.display_data as display_data
+import utools
 import ufft.smooth as smooth
+import matplotlib
 
 class Temperature(object):
     '''
@@ -33,10 +37,131 @@ class Temperature(object):
         else:
             self.date = None
             
+            
+    @staticmethod
+    def Dt_Tres_H_depth(Tres_lim, Tres_step, D_lim, D_step, H_lim, H_step, xlabel, ylabel, cblabel, points, fontsize = 20):
+        Cp = 4185.5   #J/(kg*K) (15 C, 101.325 kPa)
+        rho = 999.1026 #kg/m^3
+        tres = np.linspace(Tres_lim[0], Tres_lim[1], Tres_step)
+        H = np.linspace(H_lim[0], H_lim[1], H_step)
+        D = np.linspace(D_lim[0], D_lim[1], D_step)
+        
+        X, Y = np.meshgrid(tres,D)
+        
+        secs_in_day=24*3600
+        
+        fig = plt.figure(facecolor = 'w', edgecolor = 'k')
+        format = 100 * H_step + 10
+        ax = np.zeros(H_step, dtype = matplotlib.axes.Subplot)
+        for h in range(0, H_step):
+            dT= np.zeros((D_step, Tres_step))
+            if (h == 0) :
+                ax[h] = fig.add_subplot(format + h + 1)
+            else:
+                ax[h] = fig.add_subplot(format + h + 1, sharex = ax[0])
+            
+        
+            for j in range(0, len(D)):
+                for i in range(0, len(tres)):
+                    dT[j][i] = H[h]/(D[j]*rho*Cp)*(-tres[i]*secs_in_day) 
+    
+           
+            im = ax[h].pcolormesh(X, Y, dT, shading = 'gouraud', vmin = -30, vmax = 0)
+    
+            cb = fig.colorbar(im, ax = ax[h], aspect = 8)
+            #cb.set_clim(mintemp, maxtemp)
+            labels = cb.ax.get_yticklabels()
+            for t in labels:
+                t.set_fontsize(fontsize - 4)
+           
+            from matplotlib import ticker
+            tick_locator = ticker.MaxNLocator(nbins = 5)
+            cb.locator = tick_locator
+            cb.update_ticks()
+            cb.set_label(cblabel)
+            text = cb.ax.yaxis.label
+            font = matplotlib.font_manager.FontProperties(size = fontsize-3)
+            text.set_font_properties(font)
+            
+            if h == H_step - 1:
+                ax[h].set_xlabel(xlabel).set_fontsize(fontsize)
+                plt.setp(ax[h].get_xticklabels(), visible = True)
+            else:
+                plt.setp(ax[h].get_xticklabels(), visible = False)
+            
+            ax[h].set_ylabel(ylabel).set_fontsize(fontsize)
+            
+            for tick in ax[h].xaxis.get_major_ticks():
+                tick.label.set_fontsize(fontsize - 3)
+            for tick in ax[h].yaxis.get_major_ticks():
+                tick.label.set_fontsize(fontsize - 3)
+        
+            ax[h].set_yticks(np.arange(min(D), max(D)+1, 2.0))
+        
+            #set the points and the text 
+            for p in points:
+                text = p[0]
+                location = p[1]
+                ax[h].plot(location[0], location[1])
+                ax[h].annotate(text, xy=(location[0], location[1]), xytext = (location[0], location[1]),\
+                               color='white', fontsize = fontsize -3)
+                
+        plt.show()            
+            
     def getDict(self):
         return self.dict
 
+    @staticmethod
+    def read_ctd_file(path, fname):
+        ifile = open(path + '/' + fname, 'rb')
+        reader = csv.reader(ifile, delimiter = ',', quotechar = '"')
+        temps = []
+        depths = []
 
+        for row in reader:
+            try:
+                temp = float(row[2])
+                temps.append(temp)
+                depths.append(float(row[3]))
+            except:
+                print "Error:read_temp_file"
+            # end try
+
+        ifile.close()
+
+        return [temps, depths]
+
+    @staticmethod
+    def plot_ctds(path, files):
+        flist = ["CTD01.csv","CTD02.csv","CTD03.csv","CTD04.csv","CTD05.csv","CTD06.csv","CTD07.csv","CTD15.csv"]
+        dlist = []
+        tlist = []
+        for f in files:
+            [temps, depths] = Temperature.read_ctd_file(path, f)
+            
+            #converf from decibar totakl pressure in water depth
+            depths = [d -10 for d in depths]
+            display_data.display_simple_temperature_profiles([depths], [temps], f, revert = False, legendloc = 4)
+            if f in flist:
+                dlist.append(depths[::-1])
+                tlist.append(temps)
+        # 3) Mixed water, air ,img data
+        custom = np.array(["Depth [m]", "Depth [m]", "Depth [m]", "Depth [m]", "Depth [m]", "Depth [m]", "Depth [m]", "Depth [m]" ])
+        # ToDO: Add short and long radiation
+        print "ctd Start display mixed subplots  "
+         
+        data1 = dlist
+        dateTimes1 = tlist
+        ylabels = custom
+        limits1 = [[0,4],[0,4],[0,4],[0,4],[0,4],[0,4],[0,4],[0,4]]
+        utools.display_data.display_mixed_subplot(dateTimes1 = dateTimes1, data = data1, varnames = flist, ylabels1 = ylabels, limits1 = limits1,\
+                                           dateTimes2 = [], groups = [], groupnames = [], ylabels2 = [], \
+                                           dateTimes3 = [], imgs = [], ylabels3 = [], ticks = [], maxdepths = None, \
+                                           mindepths = None, mintemps = None, firstlogs = None, maxtemps = None, \
+                              fnames = None, revert = True, custom = None, maxdepth = None, tick = None, firstlog = None, yday = True, \
+                              title = False, grid = False, limits = None, sharex = True, fontsize = 20, group_first = False, interp = None)
+
+            
     def read_temp_file(self, path, fname):
         '''
         :param path: -- path to the file location
@@ -140,10 +265,10 @@ class Temperature(object):
             title = 'Single-Sided Amplitude spectrum'
 
         if funits == 'Hz':
-            xlabel = 'Frequency (Hz)'
+            xlabel = 'Frequency [Hz]'
             f = f_arr[0]
         elif funits == 'cph':
-            xlabel = 'Frequency (cph)'
+            xlabel = 'Frequency [cph]'
             f = f_arr[0] * 3600
         # end if
 
@@ -302,7 +427,7 @@ class Temperature(object):
 
         for i in range(0, den - 1):
             fct = int(N / den)
-            LInt = i * fct
+            LInt = (i * fct)
             RInt = LInt + M
             tt = Time[LInt:RInt]
             xx = SensorDepth[LInt:RInt]
@@ -346,3 +471,5 @@ class Temperature(object):
 
         return [f[0], avg_fftx, avg_amplit, avg_power, x05, x95]
     # end
+    
+

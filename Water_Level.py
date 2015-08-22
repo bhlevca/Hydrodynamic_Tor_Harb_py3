@@ -341,15 +341,15 @@ class WaterLevelAnalysis(object):
             title = 'Single-Sided Amplitude spectrum'
 
         if funits == 'Hz':
-            xlabel = 'Frequency (Hz)'
+            xlabel = 'Frequency [Hz]'
             f = f_arr[0]
         elif funits == 'cph':
-            xlabel = 'Frequency (cph)'
+            xlabel = 'Frequency [cph]'
             f = f_arr[0] * 3600
         # end if
 
         if y_label == None:
-            ylabel = 'Z(t) (m)'
+            ylabel = 'Z(t) [m]'
         else :
             ylabel = y_label
 
@@ -441,7 +441,7 @@ class WaterLevelAnalysis(object):
         fftsa.plotLakeLevels(lake_name, bay_name, detrend = detrend, y_label = ylabel, plottitle = plottitle, doy = doy, grid = grid)
 
         fftsa.plotSingleSideAplitudeSpectrumFreq(lake_name, bay_name, funits, y_label = None, title = None, log = log, \
-                                                         fontsize = 20, tunits = tunits, plottitle = plottitle, grid = grid, ymax = None)
+                                                         fontsize = 24, tunits = tunits, plottitle = plottitle, grid = grid, ymax = None)
         grid = False
 
         fftsa.plotPowerDensitySpectrumFreq(lake_name, bay_name, funits, plottitle = plottitle, grid = grid)
@@ -514,20 +514,26 @@ class WaterLevelAnalysis(object):
 
         # w = u + 1j * v
         if len(w) != len(dz):
-            ratio = len(w) / len(T)
+            ratio = float(len(w)) / len(tt)
             print "len w: %d | len t: %d | len tt: %d | len T: %d" % (len(w), len (t), len(tt), len(dz))
             print "ratio: %f" % ratio
-            oldrange = range(0, ratio * len(t), ratio)
-            print "len(oldrange) :%d" % len(oldrange)
-            idz = numpy.interp(t, tt, dz)
-            # iT2 = numpy.interp(range(0, ratio * len(t)), oldrange), T)
-            print "len w: %d | len iT: %d |  len T: %d" % (len(w), len(idz), len(dz))
-            tt = t
+            #oldrange = range(0, ratio * len(t), ratio)
+            #print "len(oldrange) :%d" % len(oldrange)
+            if ratio < 1 :
+                idz = np.interp(t, tt, dz)
+                # iT2 = numpy.interp(range(0, ratio * len(t)), oldrange), T)
+                print "len w: %d | len iT: %d |  len T: %d" % (len(w), len(idz), len(dz))
+                tt = t
+                iw = w
+            else:
+                iw= np.interp(tt, t, w)
+                t = tt
+                idz = dz
         else:
             idz = dz
+            iw  = w 
 
-
-        kwavelet = wavelets.kCwt.kCwt(t, w, tt, idz, scaleunit, False, True)
+        kwavelet = wavelets.kCwt.kCwt(t, iw, tt, idz, scaleunit, False, True)
         dj = 0.05  # Four sub-octaves per octaves
         s0 = -1  # 2 * dt                              # Starting scale, here 6 months
         J = -1  # 7 / dj                               # Seven powers of two with dj sub-octaves
@@ -557,6 +563,7 @@ class WaterLevelAnalysis(object):
         print  "plot coherence wavelet spectrogram"
         kwavelet.plotXSpectrogram(kwavelet.get_wct(), extend = 'neither', x_type = x_type, ylabel_sc = ylabel_sc, da = da,
                       tfactor = kwavelet.wpar1.tfactor, crange = np.arange(0, 1.1, 0.1), scale = 'linear', angle = kwavelet.get_wct().angle)
+
 
     def convert_wl_to_delft3d_tim(self, path, fn,step_min,start_WL, timesince2001):
         
@@ -626,8 +633,8 @@ if __name__ == '__main__':
         [dates, depths] = wla.read_press_corr_file(path, fname)
 
         # plot the original Lake oscillation input
-        xlabel = 'Time (days)'
-        ylabel = 'Z(t) (m)'
+        xlabel = 'Time [days]'
+        ylabel = 'Z(t) [m]'
         ts_legend = [key + ' - water levels [m]']
         fft_utils.plotTimeSeries("Lake levels", xlabel, ylabel, dates, depths, ts_legend)
         # end plot
@@ -646,7 +653,7 @@ if __name__ == '__main__':
         data.append([x95])
         data.append([f])
 
-        y_label = '|Z(t)| (m)'
+        y_label = '|Z(t)| [m]'
         title = 'Single-Sided Amplitude Spectrum vs freq'
         funits = 'cph'
         logarithmic = False

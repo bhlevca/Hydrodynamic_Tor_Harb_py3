@@ -19,7 +19,7 @@ import utools.display_data as display_data
 import ufft.smooth as smooth
 import utools.readTempHoboFiles as readTempHoboFiles
 
-import datetime
+import datetime,math
 import matplotlib.dates as dates
 import numpy, scipy
 
@@ -42,6 +42,7 @@ class Hydrodynamic(object):
         self.results_u = None
         self.results_v = None
         self.results_z = None
+        self.results_temp = None
         self.time = None
         self.locname = sitename
         self.goodbins = 0
@@ -106,15 +107,50 @@ class Hydrodynamic(object):
         
         
 
-    def readPcAdpVel(self):
+    def readPcAdpVel(self, velprofiles = False):
         velocities, timevec, goodbins = self.pcadp.readVel()
         self.results_u = velocities['ve']
         self.results_v = velocities['vn']
         self.results_z = velocities['vu']
         self.time = timevec
         self.goodbins = goodbins
+        if velprofiles:
+            #display_data.display_temperature([self.time[0]], [self.results_z[0]], [self.results_z[0]] , [[1]], fnames = ['Vert. Vel.'])
+        #=======================================================================
+        #     angles_from_N = {'OH':143, 'EmbC':53,'Cell3':43}      # for counter clockwise  
+        #                                                   #+ direction is TO outer harbour and to Lake Ontario    
+        #     num_segments = 10
+        # 
+        #     Theta = angles_from_N[self.locname] #35.1287  # degrees
+        #     tet = 2 * math.pi * Theta / 360
+        #     up, vp = plot_ADCP_velocity.rotation_transform(self.results_u, self.results_v, tet, clockwise=False)
+        #     dz = 1
+        #     vp_T = numpy.transpose(vp)
+        #     z_T  = numpy.transpose(self.results_z)
+        #     Kv_lst = []
+        #     for i in range(0, len(z_T)):
+        #         Kv = Hydrodynamic.eddy_viscosity(vp_T[i], z_T[i], dz)
+        #         Kv_lst.append(Kv)
+        #     Kv_arr = numpy.array(Kv_lst)
+        #=======================================================================
+            
+            data = [self.results_u[0],self.results_v[0],self.results_z[0]] #, Kv_arr]
+            dateTimes1 = [self.time[0], self.time[0], self.time[0]] #, self.time[0]]
+            varnames = ["East Velocity", "North Velocity", "Vert. Velocity"] #, "Eddy Viscosity"]
+            limits = [[-0.6,0.6],[-0.6,0.6],[-0.06,0.06]] #, None]
+            ylabels1 = [r'E Vel. [$\mathsf{m\cdot s^{-1}}$]',\
+                        r'N Vel. [$\mathsf{m\cdot s^{-1}}$]', \
+                        r'U Vel. [$\mathsf{m\cdot s^{-1}}$]']#, \
+                        #r'$K_\mathsf{\nu}$ [$\mathsf{ m^2\cdot s^{-1}}$]']
+            display_data.display_mixed_subplot(dateTimes1 = dateTimes1, data = data, varnames = varnames, ylabels1 = ylabels1, \
+                                       yday = True, limits = limits, sharex = True, fontsize = 18)
         # for vel in velocities
 
+    def readPcAdpTemp(self):
+        [time, temp]  = self.pcadp.readTemp()
+        self.results_temp = temp
+        self.time =time
+        return time, temp  
 
     def readRawBinADCP(self):
         try:
@@ -128,44 +164,99 @@ class Hydrodynamic(object):
                 #===============================================================
             self.adcp.goodbins = numpy.int(self.adcp.depth[0][500] - self.adcp.config.bin1_dist)+2
             self.goodbins=self.adcp.goodbins
+           
         finally:
             print('Read took %.03f sec.' % t.interval)
+    
+    @staticmethod
+    def eddy_viscosity(V, W, dz, deltav = False):
+        '''
+        THIS IS WRONG IT NEEDS COVARIANCE AT THE spot of teh timeseries of a pulse
+        NOW IT IS covariace on the veritcal space instead a time series.
+        -------------------------------------
+        Depth averagededdy viscosity 
+        Using the method from: 
+                    W. J. Shaw and J. H. Trowbridge 
+                    The Direct Estimation of Near-Bottom Turbulent Fluxes in the Presence of Energetic Wave Motions,
+                    J. Atmos. Oceanic Technol., 2001
+                    
+                    numpy.cov(a, b) retuns
+                        |cov(a,a)  cov(a,b)|
+                        |cov(a,b)  cov(b,b)|
+        '''
+        Kv = []
+        V_T  = numpy.transpose(V)# The transposed
+        grad = numpy.absolute(numpy.gradient(numpy.mean(V_T, axis = 0),dz))
+                
+        for k in range(0, len(V)):
+            if deltav:
+                "THIS NEEDS TO BE VERIFIED"
+                dV = []
+                dW = []
+                for i in range(0, len(V[k])-1):
+                     dV.append((V[k][i]-V[k][i+1]))
+                dV.append((V[i]-V[i+1]))
+                 
+                for i in range(0, len(W[k])-1):
+                     dW.append((W[k][i]-W[k][i+1]))
+                dW.append((W[k][i]-W[k][i+1]))
+                 
+                covariance = numpy.absolute(numpy.cov(numpy.array(dV),numpy.array(dW))[0][1])
+                Kv.append(covariance/grad[k])
+            else:
+                covariance = numpy.absolute(numpy.cov(V[k],W[k])[0][1])
+                Kv.append(covariance/grad[k])
+        return Kv
 
-    def select_data_dates(self, smooth = False):
+    def select_data_dates(self, smooth = False, dateint = None, velprofile = False, savetofile = False):
 
-        if self.date == None:
+        if dateint == None:
+            date = self.date 
+        else:
+            date = dateint
+            
+        if date == None:
             print "No selection is possible 'date' is none"
             self.results_u = self.adcp.east_vel
             self.results_v = self.adcp.north_vel
+            self.results_z = self.adcp.vert_vel
+            
             self.time = self.adcp.mtime[0, :]
             return
 
         # select the data by dates
-        dt = datetime.datetime.strptime(self.date[0], "%y/%m/%d %H:%M:%S")
+        dt = datetime.datetime.strptime(date[0], "%y/%m/%d %H:%M:%S")
         start_num = dates.date2num(dt)
-        dt = datetime.datetime.strptime(self.date[1], "%y/%m/%d %H:%M:%S")
+        dt = datetime.datetime.strptime(date[1], "%y/%m/%d %H:%M:%S")
         end_num = dates.date2num(dt)
 
         time1, evel = plot_ADCP_velocity.select_dates(start_num, end_num, self.adcp.mtime[0, :], self.adcp.east_vel)
         time2, nvel = plot_ADCP_velocity.select_dates(start_num, end_num, self.adcp.mtime[0, :], self.adcp.north_vel)
+        time3, zvel = plot_ADCP_velocity.select_dates(start_num, end_num, self.adcp.mtime[0, :], self.adcp.vert_vel)
 
         evel = numpy.array(evel)
         nvel = numpy.array(nvel)
+        zvel = numpy.array(zvel)
         evel[numpy.isnan(evel)] = 0  # set to zero NAN values
         evel[numpy.isinf(evel)] = 0  # set to 0 infinite values
         nvel[numpy.isnan(nvel)] = 0  # set to zero NAN values
         nvel[numpy.isinf(nvel)] = 0  # set to 0 infinite values
+        zvel[numpy.isnan(zvel)] = 0  # set to zero NAN values
+        zvel[numpy.isinf(zvel)] = 0  # set to 0 infinite values
 
-        writebins.writeBins(time1, evel, self.path, "eastVel.csv")
-        writebins.writeBins(time2, nvel, self.path, "northVel.csv")
+        if savetofile:
+            writebins.writeBins(time1, evel, self.path, "eastVel.csv")
+            writebins.writeBins(time2, nvel, self.path, "northVel.csv")
+            writebins.writeBins(time3, zvel, self.path, "vertVel.csv")
 
 
         # smoothfit requires list so we need to convert velocities back to list
         if smooth:
-            span_window = utools.interp_windows.window_hour
-            smooth_window = utools.interp_windows.windows[1]
+            span_window = utools.windows.window_hour
+            smooth_window = utools.windows.windows[1]
             results_u = []
             results_v = []
+            results_z = []
             i = 0
             for ev in evel:
                 results_u.append(smooth.smoothfit(time1[i], ev.tolist(), span_window, smooth_window)['smoothed'])
@@ -175,14 +266,68 @@ class Hydrodynamic(object):
             for nv in nvel:
                 results_v.append(smooth.smoothfit(time2[i], nv.tolist(), span_window, smooth_window)['smoothed'])
                 i += 1
+            for zv in zvel:
+                results_z.append(smooth.smoothfit(time3[i], zv.tolist(), span_window, smooth_window)['smoothed'])
+                i += 1
             # end for
-            self.results_u = numpy.array(results_u)
-            self.results_v = numpy.array(results_v)
+            if dateint == None:
+                self.results_u = numpy.array(results_u)
+                self.results_v = numpy.array(results_v)
+                self.results_z = numpy.array(results_z)
+            else:
+                tresults_u = numpy.array(results_u)
+                tresults_v = numpy.array(results_v)
+                tresults_z = numpy.array(results_z)
         else:
-            self.results_u = evel
-            self.results_v = nvel
+            if dateint == None:
+                self.results_u = evel
+                self.results_v = nvel
+                self.results_z = zvel
+            else:
+                tresults_u = evel
+                tresults_v = nvel
+                tresults_z = zvel
         # end if
-        self.time = time1
+        if dateint == None:
+            self.time = time1
+        self.results_temp =  self.adcp.temperature
+   
+        if dateint != None:
+            return [time1,  tresults_u, tresults_v, tresults_z] 
+        
+        if velprofile:
+            
+        #=======================================================================
+        #     angles_from_N = {'OH':143, 'EmbC':53,'Cell3':43}      # for counter clockwise  
+        #                                                   #+ direction is TO outer harbour and to Lake Ontario    
+        #     num_segments = 10
+        # 
+        #     Theta = angles_from_N[self.locname] #35.1287  # degrees
+        #     tet = 2 * math.pi * Theta / 360
+        #     up, vp = plot_ADCP_velocity.rotation_transform(self.results_u, self.results_v, tet, clockwise=False)
+        #     dz = 1
+        #     vp_T = numpy.transpose(vp)
+        #     z_T  = numpy.transpose(self.results_z)
+        #     Kv_lst = []
+        #     for i in range(0, len(z_t)):
+        #         Kv = Hydrodynamic.eddy_viscosity(vp_T[i], z_T[i], dz)
+        #         Kv_lst.append(Kv)
+        #     Kv_arr = numpy.array(Kv_lst)
+        #=======================================================================
+            
+            data = [self.results_u[5],self.results_v[5],self.results_z[3]]#, Kv_arr]
+            dateTimes1 = [self.time[0], self.time[0], self.time[0]]#, self.time[0]]
+            varnames = ["East Velocity", "North Velocity", "Vert. Velocity"]#, "Eddy Viscosity"]
+            limits = [[-0.8,0.8],[-0.8,0.8],[-0.06,0.06]] #, [0, 1e-3]]
+            
+            ylabels1 = [r'E Vel. [$\mathsf{m\cdot s^{-1}}$]',\
+                        r'N Vel. [$\mathsf{m\cdot s^{-1}}$]', \
+                        r'U Vel. [$\mathsf{m\cdot s^{-1}}$]'] #, \
+                        #r'$K_\mathsf{\nu}$ [$\mathsf{ m^2\cdot s^{-1}}$]']
+                                    
+            display_data.display_mixed_subplot(dateTimes1 = dateTimes1, data = data, varnames = varnames, ylabels1 = ylabels1, \
+                                       yday = True, limits = limits, sharex = True, fontsize = 18)
+
 
     def plot_uvt(self, smooth = False, sel_dates = True):
         self.select_data_dates(smooth)
@@ -207,7 +352,6 @@ class Hydrodynamic(object):
                 plot_ADCP_vel_FFT.plot_velocity_wavelet_spectrum(TH_dateTimeArr[tlogno][1:], TH_resultsArr[tlogno][1:], scaleunit = scaleunit)
 
                 print "plot cross wavelet"
-                plot_ADCP_vel_FFT.plot_cross_spectogram_w_T(res_time1, res_u, res_v, res_time1, TH_resultsArr[tlogno], scaleunit = scaleunit)
         else:
             print "plot cross wavelet"
             plot_ADCP_vel_FFT.plot_cross_spectogram_w_T(time1[bin], results_u[bin], results_v[bin], TH_dateTimeArr[tlogno], TH_resultsArr[tlogno], scaleunit = scaleunit)
@@ -260,9 +404,55 @@ class Hydrodynamic(object):
                                                              self.num_segments, funits, y_label = ylabel, title = None, \
                                                              log = log, fontsize = 24, tunits = tunits)
 
-    def rotation_transform(self, tet, clockwise=False):
-        if self.results_u is not None:
+
+    def plot_Temp_FFT(self, locname, smooth = False, tunits = "day", funits = "Hz", \
+                 log = False, grid = False, type = 'power', withci = True, sel_dates = True):
+        window = "hanning"
+
+        if sel_dates:
+            self.select_data_dates(smooth)
+
+        showLevels = False
+        detrend = False
+        show = False
+        draw = False  # do not draw the series
+
+        
+        
+        fftsa = fftGraphs.FFTGraphs(path = None, file1 = None, file2 = None, show = None, \
+                                       data = [self.time, self.results_temp], data1 = None)
+
+        date1st = True
+        names=locname
+        fftsa.doSpectralAnalysis(showLevels, draw, tunits, window, self.num_segments, filter = None, log = log, date1st = date1st)
+        if type == 'power':
+            data=fftsa.power
+        else:
+            data=fftsa.mx
+        ci05=[fftsa.x05]
+        ci95=[fftsa.x95]
+        freq=[fftsa.f]
+        lake_name = ""
+        if type == 'power':
+            ylabel = "Spectral Power [$m^2 s^{-4} Hz^{-1}$]"
+        else:
+            ylabel = 'Temperature [$^\circ$C]'
+            
+        
+        if withci:
+            ci = [ci05, ci95]
+        else:
+            ci = None
+            
+        fftGraphs.plotSingleSideSpectrumFreqMultiple(lake_name, [names], [data], freq, ci, type, \
+                                                             self.num_segments, funits, y_label = ylabel, title = None, \
+                                                             log = log, fontsize = 24, tunits = tunits)
+        
+    def rotation_transform(self, tet, clockwise=False, u=None, v=None):
+        if self.results_u is not None and u is None:
             return plot_ADCP_velocity.rotation_transform(self.results_u, self.results_v, tet, clockwise=clockwise)
+        elif u is not None:
+            return plot_ADCP_velocity.rotation_transform(u, v, tet, clockwise=clockwise)
         print 'Velocity values not read!'
         raise Exception("Velocity values not read!")
 
@@ -297,8 +487,8 @@ class Hydrodynamic(object):
         return curdir, curspd
 
     @staticmethod
-    def draw_windrose(wd, ws, type, loc = 'best', fontsize = 10, unit = "[m/s]"):
-        return plot_ADCP_velocity.draw_windrose(wd, ws, type, loc , fontsize, unit)
+    def draw_windrose(wd, ws, type, loc = 'best', fontsize = 10, unit = "[m/s]", angle = 67.5):
+        return plot_ADCP_velocity.draw_windrose(wd, ws, type, loc , fontsize, unit, angle = angle)
     
     def printVelProfiles(self, name, profiles, datetimes, firstbin, interval, Xrange= None, Yrange=None, save=False, dzdt = None):
         for i in range(0, len(profiles)):
@@ -344,5 +534,7 @@ class Hydrodynamic(object):
     @staticmethod    
     def ReadVolfromCSV(fname, level):
         return plot_ADCP_velocity.ReadVolfromCSV(fname, level)
+    
+    
   
         
