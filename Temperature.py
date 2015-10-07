@@ -63,10 +63,12 @@ class Temperature(object):
         
             for j in range(0, len(D)):
                 for i in range(0, len(tres)):
-                    dT[j][i] = H[h]/(D[j]*rho*Cp)*(-tres[i]*secs_in_day) 
+                    #dT[j][i] = -H[h]/(D[j]*rho*Cp)*(-tres[i]*secs_in_day)
+                    dT[j][i] = H[h]/(D[j]*rho*Cp)*(tres[i]*secs_in_day) 
     
            
-            im = ax[h].pcolormesh(X, Y, dT, shading = 'gouraud', vmin = -30, vmax = 0)
+            #im = ax[h].pcolormesh(X, Y, dT, shading = 'gouraud', vmin = -30, vmax = 0)
+            im = ax[h].pcolormesh(X, Y, dT, shading = 'gouraud', vmin = 0, vmax = 30)
     
             cb = fig.colorbar(im, ax = ax[h], aspect = 8)
             #cb.set_clim(mintemp, maxtemp)

@@ -1630,7 +1630,7 @@ if __name__ == '__main__':
     #v = 'vel_fft_pairs'
     #v = 'temp_fft'
     #v = 'wl_fft_pairs'
-    #v = 'plot_fft_v_T_wl'
+    v = 'plot_fft_v_T_wl'
     #v = 'calc_vel'
     
     #v = 'calc_vel_dh' 
@@ -1639,10 +1639,10 @@ if __name__ == '__main__':
     #v = 'ctd'
     #v = "subplot_lake_harbour"
     
-    v = 'subplot_Dz_ADCP_T_harbour'
+    #v = 'subplot_Dz_ADCP_T_harbour'
     #v = "wct_v_t"
     #v = 'avg-vel-profiles'
-    v = "dt_tres_H_d"
+    #v = "dt_tres_H_d"
     
     # map the inputs to the function blocks
     for case in switch(v):
