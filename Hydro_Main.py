@@ -678,7 +678,7 @@ def Avg_Vel_profiles(date, adptype = 'Cell3', firstbin=1, interval =1,\
                                                                                 profiledates = profiledates, doy = True, \
                                                                                 revert = revert, \
                                                                                 legendloc = 4, xlabel = ' Velocity [$m s^{-1}$]',\
-                                                                                errbar= False, rangebar= False,\
+                                                                                errbar= True, rangebar= True,\
                                                                                 debug = False)  
     #calculate the eddy viscosity
     
@@ -903,7 +903,7 @@ def plot_FFT_V_T_WL(adptype, date, scale = 'log', drawslope = False, resample = 
     
     
     
-def subpl_wl_dz_vel(date, adptype, resampled = False, hourgrid = False, doy = False, img=False, cbrange=[-1,1]):
+def subpl_wl_dz_vel(date, adptype, resampled = False, hourgrid = False, doy = False, img=False, cbrange=[-1,1], wl = True):
     '''
     Creates a 3 layer subplot with:
         1) water levels
@@ -970,7 +970,8 @@ def subpl_wl_dz_vel(date, adptype, resampled = False, hourgrid = False, doy = Fa
     #add one more to dzdt since is intepolated between nodes and prfiles are on nodes.
     
     legend = []
-    legend.append("Water level") 
+    if wl:
+        legend.append("Water level") 
     legend.append("$\Delta Z/ \Delta t$")
     bin_legend = []
     for i in range(0,len(bins[adptype])):
@@ -980,13 +981,15 @@ def subpl_wl_dz_vel(date, adptype, resampled = False, hourgrid = False, doy = Fa
     
     dataarr = []
     if resampled:
-        dataarr.append(rdepths[:-10])
+        if wl:
+            dataarr.append(rdepths[:-10])
         dataarr.append(rdzdt[:-10])
         dataarr.append(rvp)
         date = rtime[:-10]
         dateImg = rvtime
-    else:    
-        dataarr.append(depths[:-1])
+    else:   
+        if wl: 
+            dataarr.append(depths[:-1])
         dataarr.append(dzdt[:-1])
         dataarr.append(rvp)
         date = dates[:-1]
@@ -995,7 +998,10 @@ def subpl_wl_dz_vel(date, adptype, resampled = False, hourgrid = False, doy = Fa
         else:
             dateImg = hyd.time[0].tolist()
     #labels = ['Z [$m$]', 'dz/dt [$m$]','velocity [$m s^{-1}$]']
-    labels = ['Z [$m$]', 'dz/dt [$m$]','depth [$m$]']
+    if wl:
+        labels = ['Z [$m$]', 'dz/dt [$m$]','depth [$m$]']
+    else:
+        labels = ["dz dt$^{-1}$ [m h$^{-1}$]","depth [$m$]"]
     
     hyd.display_subplots(date, dateImg, dataarr, dnames = labels, yday = doy, tick = None, legend = legend, hourgrid = hourgrid, img=img, cbrange=cbrange, maxdepth = maxdepth[adptype])
 
@@ -1378,7 +1384,7 @@ def subplot_lake_harbour(str_date, date, adptype):
 
 
 
-def subplot_Dz_ADCP_T_harbour(str_date, date, adptype):
+def subplot_Dz_ADCP_T_harbour(str_date, date, adptype, one_V = False):
     resampled =False
     locale.setlocale(locale.LC_TIME, 'en_US.UTF-8')
 
@@ -1534,63 +1540,107 @@ def subplot_Dz_ADCP_T_harbour(str_date, date, adptype):
     # 3) Mixed water, air ,img data
     custom = numpy.array(['Water level', ])
     
-    if adptype == "Cell3":
-        dateTimes3 = [hyd.time, hyd.time, hyd.time, TH_dateTimeArr]
-        imgs = [vp, up, grad_T, TH_resultsArr[::-1]]
+        
+    
+    if one_V:
+        
+        if adptype == "Cell3":
+            dateTimes3 = [hyd.time, TH_dateTimeArr]
+            imgs = [vp, TH_resultsArr[::-1]]
+        else:
+            dateTimes3 = [hyd.time[:-dd], TH_dateTimeArr]
+            imgs = [vp[:-dd], TH_resultsArr[::-1]]
+            
+        ylabels3 = ["Depth [m]", "Depth [m]"] 
+        
+        if adptype == 'OH':
+            t11 = ['0', '2', '4.5', '7']
+            t12 = [7, 4.5, 2, 0]
+            
+            
+            #maxdepth = [9, 27] # Harbour first
+            maxdepth = [7, 10]
+            #firstlogdepth = [0, 3] Harbour first
+            firstlogdepth = [0, 0]
+            mindepths = [0, 0]
+            maxtemp = [0.2,  24]
+            mintemps = [-0.2, 0]
+            
+        elif adptype == "EmbC" or adptype == "Cell3":
+            t11 = ['0', '1.5', '3.0', '4.5']
+            t12 = [4.5, 3, 1.5, 0]
+           
+            #maxdepth = [9, 27] # Harbour first
+            maxdepth = [4.5, 10]
+            #firstlogdepth = [0, 3] Harbour first
+            firstlogdepth = [0, 0]
+            mindepths = [0, 0]
+            maxtemp = [0.2, 24]
+            mintemps = [-0.2, 0]
+            
+       
+        t41 = ['0', '3', '6', '10']
+        t42 = [10, 6, 3, 0]
+        
+        tick = [[t11, t12], [t41, t42]  ]
+        
+        #limits = [None, None, [-1, 10], None, None ] <= this datesscrews up the tickers 
+        limits = None
+        clabel =  ["$V_{alg}$ [$m s^{-1}$]", "Temp [$\circ$ C]"]   
     else:
-        dateTimes3 = [hyd.time[:-dd], hyd.time[:-dd], hyd.time[:-dd], TH_dateTimeArr]
-        imgs = [vp[:-dd], up[:-dd], grad_T[:-dd], TH_resultsArr[::-1]]
+        if adptype == "Cell3":
+            dateTimes3 = [hyd.time, hyd.time, hyd.time, TH_dateTimeArr]
+            imgs = [vp, up, grad_T, TH_resultsArr[::-1]]
+        else:
+            dateTimes3 = [hyd.time[:-dd], hyd.time[:-dd], hyd.time[:-dd], TH_dateTimeArr]
+            imgs = [vp[:-dd], up[:-dd], grad_T[:-dd], TH_resultsArr[::-1]]
+            
+        ylabels3 = ["Depth [m]", "Depth [m]", "Depth [m]", "Depth [m]"] 
+        if adptype == 'OH':
+            t11 = ['0', '2', '4.5', '7']
+            t12 = [7, 4.5, 2, 0]
+            
+            t21 = ['0', '2', '4.5', '7']
+            t22 = [7, 4.5, 2, 0]
+            
+            t31 = ['0', '2', '4.5', '7']
+            t32 = [7, 4.5, 2, 0]
         
-    ylabels3 = ["Depth [m]", "Depth [m]", "Depth [m]", "Depth [m]"] 
-    
-    
-    
-    
-    if adptype == 'OH':
-        t11 = ['0', '2', '4.5', '7']
-        t12 = [7, 4.5, 2, 0]
+            #maxdepth = [9, 27] # Harbour first
+            maxdepth = [7, 7, 7, 10]
+            #firstlogdepth = [0, 3] Harbour first
+            firstlogdepth = [0, 0, 0, 0]
+            mindepths = [0, 0, 0, 0]
+            maxtemp = [0.2, 0.2, 0.05, 24]
+            mintemps = [-0.2, -0.2, -0.05, 0]
+            
+        elif adptype == "EmbC" or adptype == "Cell3":
+            t11 = ['0', '1.5', '3.0', '4.5']
+            t12 = [4.5, 3, 1.5, 0]
+            
+            t21 = ['0', '1.5', '3.0', '4.5']
+            t22 = [4.5, 3, 1.5, 0]
+            
+            t31 = ['0', '1.5', '3.0', '4.5']
+            t32 = [4.5, 3, 1.5, 0]
         
-        t21 = ['0', '2', '4.5', '7']
-        t22 = [7, 4.5, 2, 0]
+            #maxdepth = [9, 27] # Harbour first
+            maxdepth = [4.5, 4.5, 4.5, 10]
+            #firstlogdepth = [0, 3] Harbour first
+            firstlogdepth = [0, 0, 0, 0]
+            mindepths = [0, 0, 0, 0, 0]
+            maxtemp = [0.2, 0.2, 0.05, 24]
+            mintemps = [-0.2, -0.2, -0.05, 0]
+            
+       
+        t41 = ['0', '3', '6', '10']
+        t42 = [10, 6, 3, 0]
         
-        t31 = ['0', '2', '4.5', '7']
-        t32 = [7, 4.5, 2, 0]
-    
-        #maxdepth = [9, 27] # Harbour first
-        maxdepth = [7, 7, 7, 10]
-        #firstlogdepth = [0, 3] Harbour first
-        firstlogdepth = [0, 0, 0, 0]
-        mindepths = [0, 0, 0, 0]
-        maxtemp = [0.2, 0.2, 0.05, 24]
-        mintemps = [-0.2, -0.2, -0.05, 0]
+        tick = [[t11, t12], [t21, t22], [t31, t32], [t41, t42]  ]
         
-    elif adptype == "EmbC" or adptype == "Cell3":
-        t11 = ['0', '1.5', '3.0', '4.5']
-        t12 = [4.5, 3, 1.5, 0]
-        
-        t21 = ['0', '1.5', '3.0', '4.5']
-        t22 = [4.5, 3, 1.5, 0]
-        
-        t31 = ['0', '1.5', '3.0', '4.5']
-        t32 = [4.5, 3, 1.5, 0]
-    
-        #maxdepth = [9, 27] # Harbour first
-        maxdepth = [4.5, 4.5, 4.5, 10]
-        #firstlogdepth = [0, 3] Harbour first
-        firstlogdepth = [0, 0, 0, 0]
-        mindepths = [0, 0, 0, 0, 0]
-        maxtemp = [0.2, 0.2, 0.05, 24]
-        mintemps = [-0.2, -0.2, -0.05, 0]
-        
-   
-    t41 = ['0', '3', '6', '10']
-    t42 = [10, 6, 3, 0]
-    
-    tick = [[t11, t12], [t21, t22], [t31, t32], [t41, t42]  ]
-    
-    #limits = [None, None, [-1, 10], None, None ] <= this datesscrews up the tickers 
-    limits = None
-        
+        #limits = [None, None, [-1, 10], None, None ] <= this datesscrews up the tickers 
+        limits = None
+        clabel = ["$V_{alg}$ [$m s^{-1}$]", "$V_{crs}$ [$m s^{-1}$]","$dV/dz$ [$s^{-1}$]","Temp [$\circ$ C]"]
     
     
     utools.display_data.display_mixed_subplot(dateTimes1 = [rtime[:-1]], data = [rdzdt[:-1]], varnames = [], ylabels1 = ["dz dt$^{-1}$ [m h$^{-1}$]"], limits1 = limits1, \
@@ -1599,7 +1649,7 @@ def subplot_Dz_ADCP_T_harbour(str_date, date, adptype):
                                               mindepths = mindepths, mintemps = mintemps, firstlogs = firstlogdepth, maxtemps = maxtemp, \
                                               fnames = None, revert = True, custom = None, maxdepth = None, tick = None, firstlog = None, yday = True, \
                                               title = False, grid = False, limits = limits, sharex = True, fontsize = 18, group_first = False, interp = 2,\
-                                              cblabel =  ["$V_{alg}$ [$m s^{-1}$]", "$V_{crs}$ [$m s^{-1}$]","$dV/dz$ [$s^{-1}$]","Temp [$\circ$ C]"])   
+                                              cblabel =  clabel)   
     
 if __name__ == '__main__':
 
@@ -1630,7 +1680,7 @@ if __name__ == '__main__':
     #v = 'vel_fft_pairs'
     #v = 'temp_fft'
     #v = 'wl_fft_pairs'
-    v = 'plot_fft_v_T_wl'
+    #v = 'plot_fft_v_T_wl'
     #v = 'calc_vel'
     
     #v = 'calc_vel_dh' 
@@ -1641,7 +1691,7 @@ if __name__ == '__main__':
     
     #v = 'subplot_Dz_ADCP_T_harbour'
     #v = "wct_v_t"
-    #v = 'avg-vel-profiles'
+    v = 'avg-vel-profiles'
     #v = "dt_tres_H_d"
     
     # map the inputs to the function blocks
@@ -1687,8 +1737,8 @@ if __name__ == '__main__':
         if  case ('avg-vel-profiles'):
             #location can be 'Cell3' 'EmbC' 'OH'
             location = 'Cell3' 
-            #location = 'EmbC'
-            #location = 'OH'
+            location = 'EmbC'
+            location = 'OH'
             
             firstbins = {"Cell3":0.3, "EmbC":1.0, "OH":1.0}
             intervals= {"Cell3":1.0, "EmbC":1.0, "OH":1.0}
@@ -1776,7 +1826,8 @@ if __name__ == '__main__':
             img=True
             location = "EmbC"
             location = "Cell3"
-            subpl_wl_dz_vel(date, location, resampled, hourgrid, doy = DOY, img=img, cbrange=[-0.4,0.4])
+            wl = False
+            subpl_wl_dz_vel(date, location, resampled, hourgrid, doy = DOY, img=img, cbrange=[-0.4,0.4], wl = wl)
             break
         if case ('plot_fft_v_T_wl'):
             date = ['13/06/25 00:00:00', '13/08/16 00:00:00']    # TOO LONG
@@ -1848,8 +1899,9 @@ if __name__ == '__main__':
             dt = datetime.strptime(date[1], "%y/%m/%d %H:%M:%S")
             end_num = dates.date2num(dt)
             adptype = "Cell3"
-            adptype = "OH"
-            subplot_Dz_ADCP_T_harbour(date, [start_num, end_num], adptype)
+            #adptype = "OH"
+            one_V = True
+            subplot_Dz_ADCP_T_harbour(date, [start_num, end_num], adptype, one_V)
             break
         
         if case ("wct_v_t"):
@@ -1859,13 +1911,14 @@ if __name__ == '__main__':
             break
         
         if case("dt_tres_H_d"):
-            points = [["C1", [9.5, 1.1]],
+            points = [["C1", [9.5, 2.1]],
                       ["C2", [1.18, 1.6]],
                       ["C3", [6, 7.4]],
                       ["EC", [2.3, 4.3]],
                       ["OH", [1.5, 8.9]], 
                       ]
-            Temperature.Temperature.Dt_Tres_H_depth([1, 10], 100, [1,10], 100, [10,500], 4,\
+            #Temperature.Temperature.Dt_Tres_H_depth([1, 10], 100, [1,10], 100, [10,350], 3,\
+            Temperature.Temperature.Dt_Tres_H_depth([1, 10], 100, [1,10], 100, [150, 500], 1,\
                                                      xlabel = "Residence time [days]", \
                                                      ylabel = "Depth [m]",  \
                                                      cblabel = "$\Delta$T [$^\circ$C]",\
