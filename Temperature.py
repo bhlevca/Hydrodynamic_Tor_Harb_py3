@@ -19,6 +19,7 @@ import wavelets.kCwt
 import ufft.FFTGraphs as FFTGraphs
 import utools.display_data as display_data
 import utools
+import utools.stats as stat
 import ufft.smooth as smooth
 import matplotlib
 
@@ -38,8 +39,14 @@ class Temperature(object):
             self.date = None
             
             
+       
+        
     @staticmethod
-    def Dt_Tres_H_depth(Tres_lim, Tres_step, D_lim, D_step, H_lim, H_step, xlabel, ylabel, cblabel, points, fontsize = 20):
+    def DTemp_Model_vs_Meas(Tres_lim, Tres_step, D_lim, D_step, H_lim, H_step, xlabel, ylabel, cblabel, \
+                            points, lake, range_x=None, range_y=None, \
+                            fontsize = 20, chains = None, exclusions = None):
+        
+        
         Cp = 4185.5   #J/(kg*K) (15 C, 101.325 kPa)
         rho = 999.1026 #kg/m^3
         tres = np.linspace(Tres_lim[0], Tres_lim[1], Tres_step)
@@ -63,14 +70,13 @@ class Temperature(object):
         
             for j in range(0, len(D)):
                 for i in range(0, len(tres)):
-                    #dT[j][i] = -H[h]/(D[j]*rho*Cp)*(-tres[i]*secs_in_day)
                     dT[j][i] = H[h]/(D[j]*rho*Cp)*(tres[i]*secs_in_day) 
     
-           
             #im = ax[h].pcolormesh(X, Y, dT, shading = 'gouraud', vmin = -30, vmax = 0)
             im = ax[h].pcolormesh(X, Y, dT, shading = 'gouraud', vmin = 0, vmax = 30)
-    
-            cb = fig.colorbar(im, ax = ax[h], aspect = 8)
+            
+            cb = fig.colorbar(im, ax = ax[h], aspect = 18)
+
             #cb.set_clim(mintemp, maxtemp)
             labels = cb.ax.get_yticklabels()
             for t in labels:
@@ -100,15 +106,90 @@ class Temperature(object):
         
             ax[h].set_yticks(np.arange(min(D), max(D)+1, 2.0))
         
-            #set the points and the text 
-            for p in points:
-                text = p[0]
-                location = p[1]
+            #set the points and the text
+            ii=0 
+            for k,v in points.items():
+                text = k
+                if text == "LO":
+                    continue
+                location = v[0]
                 ax[h].plot(location[0], location[1])
+                 
                 ax[h].annotate(text, xy=(location[0], location[1]), xytext = (location[0], location[1]),\
-                               color='white', fontsize = fontsize -3)
+                               color='white', fontsize = fontsize-5)
+                ii+=1
+    
+            #testing images
+            #===================================================================
+            #  
+            # D2 = im.get_array().reshape(len(X), len(Y))
+            # #fig.close()
+            # #assert  np.array_equal(D, D2)
+            # # get the values from the
+            # calcDTemp = []
+            # measTemp = []
+            # point_labels=[]
+            # print ("------------------------------------")
+            # for k, v in points.items():
+            #     # WHY IS REVERSED HERE?
+            #     name = k 
+            #     if name == "LO":
+            #         continue
+            #     point_labels.append(name)
+            #     xp= int((v[1])*len(Y)/range_y)
+            #     yp=int((v[0])*len(X)/range_x)
+            #     calcDTemp.append(D2[xp,yp])
+            #     measTemp.append(v[2])  
+            #     print ("bay:%s dtMeas:%f dtCalc:%f " % (name, v[2], D2[xp,yp]))
+            # print ("------------------------------------")
+            # 
+            # #create the regression
+            # [r2, slope, intercept, r_value, p_value, std_err] = stat.rsquared(measTemp, calcDTemp)
+            # stat.plot_regression(np.array(measTemp), np.array(calcDTemp), slope = slope, intercept = intercept, point_labels = point_labels, \
+            #                      x_label = "Measured $\Delta$T [$^\circ$C]", y_label = "Calculated $\Delta$T [$^\circ$C]", \
+            #                      r_value = r_value, p_value = p_value, show=True, \
+            #                      title = "Measured vs. Calculated $\Delta$T")
+            #===================================================================
+            
+            #use the chains
+            
+            if chains is not None:
+                deltaT = []
+                point_labels=[]
+                measTemp = []
+                stddev = []
                 
-        plt.show()            
+                loTemp=lake["LO"][3]
+                if exclusions != None:
+                    deltaT_excl = []
+                    measTemp_excl = []
+                    stddev = []
+                for name, data in points.items():
+                    if name == "LO":
+                        continue
+                    D = data[0][1]
+                    resTime = data[0][0]
+                    meanT = data[0][3]
+                    Heat=H[h]
+                    cT=Heat/(D*rho*Cp)*(resTime*secs_in_day)
+                    deltaT.append(cT)
+                    measDT=meanT-loTemp
+                    measTemp.append(measDT)
+                    stddev.append(data[1])
+                    if exclusions != None and name not in exclusions:
+                        deltaT_excl.append(cT) 
+                        measTemp_excl.append(measDT)
+                        
+                    print("name:%s, measDT:%f  calcDT:%f" %(name, measDT,cT))
+                    point_labels.append(name)
+                if exclusions != None:
+                    [r2, slope, intercept, r_value, p_value, std_err] = stat.rsquared(measTemp_excl, deltaT_excl)
+                else:
+                    [r2, slope, intercept, r_value, p_value, std_err] = stat.rsquared(measTemp, deltaT)
+                stat.plot_regression(np.array(measTemp), np.array(deltaT), stddev, slope = slope, intercept = intercept, point_labels = point_labels, \
+                                 x_label = "Measured $\Delta$T [$^\circ$C]", y_label = "Calculated $\Delta$T [$^\circ$C]", \
+                                 r_value = r_value, p_value = p_value, show=True, exclusions = exclusions) #, \
+                                 #title = "Measured vs. $\Delta$T Calculated Directly")
             
     def getDict(self):
         return self.dict
@@ -126,7 +207,7 @@ class Temperature(object):
                 temps.append(temp)
                 depths.append(float(row[3]))
             except:
-                print "Error:read_temp_file"
+                print("Error:read_temp_file")
             # end try
 
         ifile.close()
@@ -150,7 +231,7 @@ class Temperature(object):
         # 3) Mixed water, air ,img data
         custom = np.array(["Depth [m]", "Depth [m]", "Depth [m]", "Depth [m]", "Depth [m]", "Depth [m]", "Depth [m]", "Depth [m]" ])
         # ToDO: Add short and long radiation
-        print "ctd Start display mixed subplots  "
+        print("ctd Start display mixed subplots  ")
          
         data1 = dlist
         dateTimes1 = tlist
@@ -176,7 +257,7 @@ class Temperature(object):
             dtime = datetime.strptime(self.date[1], "%y/%m/%d %H:%M:%S")
             endt = dates.date2num(dtime)
 
-        ifile = open(path + '/' + fname, 'rb')
+        ifile = open(path + '/' + fname, 'rt')
         reader = csv.reader(ifile, delimiter = ',', quotechar = '"')
         dateTime = []
         depths = []
@@ -191,7 +272,7 @@ class Temperature(object):
                 dateTime.append(time)
                 depths.append(float(row[2]))
             except:
-                print "Error:read_temp_file"
+                print("Error:read_temp_file")
             # end try
 
         ifile.close()
@@ -392,7 +473,7 @@ class Temperature(object):
         # This is an evenly spaced frequency vector with NumUniquePts points.
         # generate a freq spectrum from 0 to Fs / 2 (Nyquist freq) , NFFT / 2 + 1 points
         # The FFT is calculated for every discrete point of the frequency vector described by
-        freq = np.array(range(0, NumUniquePts))
+        freq = np.array(list(range(0, NumUniquePts)))
         freq = freq * Fs / NFFT  # 2
         # same as
         # freq = np.fft.fftfreq(NFFT, d = dt_s)[:NumUniquePts]
@@ -474,4 +555,14 @@ class Temperature(object):
         return [f[0], avg_fftx, avg_amplit, avg_power, x05, x95]
     # end
     
-
+    def stddev(self):
+        out = []
+        for fn in self.dict:
+            [date,temps] = self.read_temp_file(self.path, fn)
+            stddev = np.std(temps)
+            mean = np.average(temps)
+            MinSD = stddev
+            MaxSD = stddev
+            out.append([MinSD,MaxSD])
+        return out
+        

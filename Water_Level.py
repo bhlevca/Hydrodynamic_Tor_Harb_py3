@@ -48,7 +48,7 @@ class WaterLevelAnalysis(object):
             dtime = datetime.strptime(self.date[1], "%y/%m/%d %H:%M:%S")
             endt = dates.date2num(dtime)
 
-        ifile = open(path + '/' + fname, 'rb')
+        ifile = open(path + '/' + fname, 'rt')
         reader = csv.reader(ifile, delimiter = ',', quotechar = '"')
         dateTime = []
         depths = []
@@ -63,7 +63,7 @@ class WaterLevelAnalysis(object):
                 dateTime.append(time)
                 depths.append(float(row[1]))
             except:
-                print "Error:read_press_corr_file"
+                print("Error:read_press_corr_file")
             # end try
 
         ifile.close()
@@ -164,7 +164,7 @@ class WaterLevelAnalysis(object):
         # This is an evenly spaced frequency vector with NumUniquePts points.
         # generate a freq spectrum from 0 to Fs / 2 (Nyquist freq) , NFFT / 2 + 1 points
         # The FFT is calculated for every discrete point of the frequency vector described by
-        freq = np.array(range(0, NumUniquePts))
+        freq = np.array(list(range(0, NumUniquePts)))
         freq = freq * Fs / NFFT  # 2
         # same as
         # freq = np.fft.fftfreq(NFFT, d = dt_s)[:NumUniquePts]
@@ -390,9 +390,9 @@ class WaterLevelAnalysis(object):
 
         kwavelet.doSpectralAnalysis(title, "morlet", slevel, avg1, avg2, dj, s0, J, alpha)
         if debug:
-            print "fftfreq=", kwavelet.wpar1.fftfreqs
-            print "amplit=", kwavelet.wpar1.amplitude
-            print "phase=", kwavelet.wpar1.phase
+            print("fftfreq=", kwavelet.wpar1.fftfreqs)
+            print("amplit=", kwavelet.wpar1.amplitude)
+            print("phase=", kwavelet.wpar1.phase)
 
         ylabel_ts = "amplitude"
         yunits_ts = 'm'
@@ -413,35 +413,38 @@ class WaterLevelAnalysis(object):
         fft_utils.plot_n_TimeSeries(title, xlabel, ylabel, [dates], [depths], legend = ts_legend, doy = True)
     # end
 
-    def doDualSpectralAnalysis(self, path, filenames, names, b_wavelets = False, window = "hanning", num_segments = None, tunits = 'day', \
-                         funits = "Hz", filter = None, log = False, doy = False, grid = False):
+    def doDualSpectralAnalysis(self, path, filenames, names, b_wavelets = False, window = "hanning", num_segments = 1, tunits = 'day', \
+                         funits = "Hz", filter = None, log = False, doy = False, grid = False, dateinterval=None, d3d=False):
 
         # show extended calculation of spectrum analysis
         show = True
 
-        fftsa = FFTGraphs.FFTGraphs(path, filenames[0], filenames[1], show, tunits)
+        fftsa = FFTGraphs.FFTGraphs(path, filenames[0], filenames[1], show, tunits, )
         lake_name = names[0]
         bay_name = names[1]
 
         showLevels = False
-        detrend = True
+        detrend = False
         draw = False
-        [Time, y, x05, x95, fftx, freq, mx] = fftsa.doSpectralAnalysis(showLevels, draw, tunits, window, num_segments, filter, log)
+        [Time, y, x05, x95, fftx, freq, mx] = fftsa.doSpectralAnalysis(showLevels, draw, tunits, window, num_segments, filter, log, dateinterval=dateinterval, d3d=d3d)
         phase = np.zeros(len(fftx), dtype = np.float)
         deg = True
         phase = np.angle(fftx, deg)
-        print "*****************************"
-        print " PHASEs"
+        print("*****************************")
+        print(" PHASEs")
         for i in range(0, len(fftx)):
-            print "Period %f  phase:%f  amplit:%f" % (1. / freq[i] / 3600, phase[i], mx[i])
-        print "*****************************"
+            print("Period %f  phase:%f  amplit:%f" % (1. / freq[i] / 3600, phase[i], mx[i]))
+        print("*****************************")
 
         plottitle = False
-        ylabel = "Z [m]"
-        fftsa.plotLakeLevels(lake_name, bay_name, detrend = detrend, y_label = ylabel, plottitle = plottitle, doy = doy, grid = grid)
+        ylabel = "Water level [m]"
+        ylabel = "Discharge [$m^3 s^{-1}$]"
+        xlabel = "Time [days]"
+        
+        fftsa.plotLakeLevels(lake_name, bay_name, detrend = detrend, x_label = xlabel, y_label = ylabel, plottitle = plottitle, doy = doy, grid = grid, dateinterval=dateinterval)
 
         fftsa.plotSingleSideAplitudeSpectrumFreq(lake_name, bay_name, funits, y_label = None, title = None, log = log, \
-                                                         fontsize = 24, tunits = tunits, plottitle = plottitle, grid = grid, ymax = None)
+                                                         fontsize = 20, tunits = tunits, plottitle = plottitle, grid = grid, ymax = None)
         grid = False
 
         fftsa.plotPowerDensitySpectrumFreq(lake_name, bay_name, funits, plottitle = plottitle, grid = grid)
@@ -455,7 +458,7 @@ class WaterLevelAnalysis(object):
 
     def delta_z_resample(self, dates, depths, dt):
         dt0 = (dates[2] - dates[1])
-        print "dt0=%f" % dt0
+        print("dt0=%f" % dt0)
 
         winlen = int(dt / dt0)
         if not isinstance(depths, np.ndarray):
@@ -478,7 +481,7 @@ class WaterLevelAnalysis(object):
 
     def delta_z_mov_average(self, dates, depths, dt):
         dt0 = (dates[2] - dates[1])
-        print "dt0=%f" % dt0
+        print("dt0=%f" % dt0)
 
         winlen = int(dt / dt0)
         if not isinstance(depths, np.ndarray):
@@ -509,20 +512,20 @@ class WaterLevelAnalysis(object):
         :param tt : wl time array
         :param dz : dz/dt - water level variation
         '''
-        print "Start cross spectrum analysis"
+        print("Start cross spectrum analysis")
 
 
         # w = u + 1j * v
         if len(w) != len(dz):
             ratio = float(len(w)) / len(tt)
-            print "len w: %d | len t: %d | len tt: %d | len T: %d" % (len(w), len (t), len(tt), len(dz))
-            print "ratio: %f" % ratio
+            print("len w: %d | len t: %d | len tt: %d | len T: %d" % (len(w), len (t), len(tt), len(dz)))
+            print("ratio: %f" % ratio)
             #oldrange = range(0, ratio * len(t), ratio)
             #print "len(oldrange) :%d" % len(oldrange)
             if ratio < 1 :
                 idz = np.interp(t, tt, dz)
                 # iT2 = numpy.interp(range(0, ratio * len(t)), oldrange), T)
-                print "len w: %d | len iT: %d |  len T: %d" % (len(w), len(idz), len(dz))
+                print("len w: %d | len iT: %d |  len T: %d" % (len(w), len(idz), len(dz)))
                 tt = t
                 iw = w
             else:
@@ -542,9 +545,9 @@ class WaterLevelAnalysis(object):
         val1, val2 = (0, 520000)  # Range of sc_type (ex periods) to plot in spectogram
         avg1, avg2 = (0, 520000)  # Range of sc_type (ex periods) to plot in spectogram
         title = "Cross vel-dz/dt spectrum"
-        print title + "start: Monte Carlo"
+        print(title + "start: Monte Carlo")
         kwavelet.doCrossSpectralAnalysis(title, "morlet", slevel, avg1, avg2, dj, s0, J, alpha)
-        print title + "end: Monte Carlo"
+        print(title + "end: Monte Carlo")
 
         ylabel_ts = "PSD"
         yunits_ts = 'm/s'
@@ -556,23 +559,21 @@ class WaterLevelAnalysis(object):
         x_type = 'dayofyear'
 
 
-        print  "#plot cross wavelet spectrogram"
+        print("#plot cross wavelet spectrogram")
         kwavelet.plotXSpectrogram(kwavelet.get_xwt(), extend = 'both', x_type = x_type, ylabel_sc = ylabel_sc, da = da,
                       tfactor = kwavelet.wpar1.tfactor, scale = 'linear')
 
-        print  "plot coherence wavelet spectrogram"
+        print("plot coherence wavelet spectrogram")
         kwavelet.plotXSpectrogram(kwavelet.get_wct(), extend = 'neither', x_type = x_type, ylabel_sc = ylabel_sc, da = da,
                       tfactor = kwavelet.wpar1.tfactor, crange = np.arange(0, 1.1, 0.1), scale = 'linear', angle = kwavelet.get_wct().angle)
 
 
-    def convert_wl_to_delft3d_tim(self, path, fn,step_min,start_WL, timesince2001):
-        
-        dtime = datetime.strptime(self.date[0], "%y/%m/%d %H:%M:%S")
-        st_strg = dtime.strftime("%y%m%d")
+
+    def interpolate_to_delft3d(self, fn, step_min, start_WL, timesince2001):
         [dates, depths] = self.read_press_corr_file(path, fn)
         
         dt0 = (dates[2] - dates[1])           #days
-        print "dt0=%f" % dt0
+        print("dt0=%f" % dt0)
         dt = step_min/24./60.                 #convert into days
         winlen = int(dt / dt0)
         if not isinstance(depths, np.ndarray):
@@ -585,10 +586,15 @@ class WaterLevelAnalysis(object):
         #not having any prior points, so itll be 1+0+0 = 1 /3 = .3333
         rdepths = np.convolve(depths, weigths, 'valid')
         rtime = sp.ndimage.interpolation.zoom(dates, float(dt0 / dt))
-        
+        return [rdepths, rtime]
+
+    def convert_wl_to_delft3d_tim(self, path, fn, step_min, start_WL, timesince2001):
+        dtime = datetime.strptime(self.date[0], "%y/%m/%d %H:%M:%S")
+        st_strg = dtime.strftime("%y%m%d")
+        [rdepths, rtime] = interpolate_to_delft3d(fn, step_min, start_WL, timesince2001)     
         #write to 
         outfn=path+"/"+ st_strg + fn+".tim"
-        ofile = open(outfn, "wb")
+        ofile = open(outfn, "wt")
         writer = csv.writer(ofile, delimiter = '\t', quotechar = '"', quoting = csv.QUOTE_MINIMAL)
         #convert time to min starting from 0
         start = rtime[0]
@@ -602,7 +608,7 @@ class WaterLevelAnalysis(object):
        
     def calculate_min_since_20010101000000(self, step_min):
         d1 = datetime.strptime(self.date[0], "%y/%m/%d %H:%M:%S")
-        d2001 = datetime(2001,01,01,00,00,00)
+        d2001 = datetime(2001,0o1,0o1,00,00,00)
         d2 = datetime.strptime(self.date[1], "%y/%m/%d %H:%M:%S")
         dt= d1-d2001
         totmin1 = int(dt.total_seconds()/60)
@@ -627,7 +633,7 @@ if __name__ == '__main__':
     num_segments = 10
     wla = WaterLevelAnalysis(path, filenames, num_segments)
 
-    for key in sorted(wla.getDict().iterkeys()):
+    for key in sorted(wla.getDict().keys()):
         fname = wla.getDict()[key]
 
         [dates, depths] = wla.read_press_corr_file(path, fname)
@@ -666,4 +672,4 @@ if __name__ == '__main__':
 
         wla.plotWaveletScalogram(dates, depths, tunits)
 
-    print "Done !!"
+    print("Done !!")

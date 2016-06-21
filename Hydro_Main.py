@@ -55,13 +55,13 @@ paths = {1:'/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Hobo-Apr-Nov-2013/WL
        4:'/home/bogdan/Documents/UofT/PhD/Data_Files/2010/Toberymory_tides',
        5:'/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Volume-Calculations',
        6:'/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Carleton-Nov2013/csv_processed',
-       7:'/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Hobo-Apr-Nov-2013/ClimateMap'}
-
-#-----------------------------------------------------------------------------------------------------
+       7:'/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Hobo-Apr-Nov-2013/ClimateMap',
+       8:'/home/bogdan/Documents/UofT/MITACS-TRCA/3DModel/Output_data',
+       9:'/home/bogdan/Documents/UofT/MITACS-TRCA/3DModel/Output_data/Model-discharge'}
 
 
 def Temp_FFT_analysis_all():
-    print "WL fft analysis"
+    print("WL fft analysis")
     filenames = {'Stn41':'Station41November.csv',
                  }
     filenames = {'Bot_CB':                     'Bot_CB.csv',                                       
@@ -89,21 +89,21 @@ def Temp_FFT_analysis_all():
                 'FerryBT':            'East_of_Ferry_Boat_Terminal.csv',                              
                  #'EmbC':                                 'EmbC.csv',                                                   
                  #'MidDock':                             'MidDock.csv',                                               
-                'Stn14':                      'Stn14.csv',                                        
-                'Stn21':                            'Stn21.csv',                              
-                'Stn41':                            'Stn41.csv',                              
-                'Stn49':                            'Stn49.csv',                              
-                'TIBBM':                      'Toronto_Islands_Blockhouse_Bay_Mouth.csv',                 
-                'TC3':                    'Bot_TC3.csv',                                      
-                'Cell2':                      'Cell2.csv',                                        
-                 #'EGap':                      'EGap.csv',                                        
-                'EmbCOB':                   'Emb_C_Outside_Berm.csv',                                     
-                'SimcoeDock':                         'Simcoe_Slip.csv',                                           
-                'Stn19':                      'Stn19.csv',                                        
-                'Stn22':                            'Stn22.csv',                              
-                #'Stn42':                            'Stn42.csv',                              
-                'Stn50':                            'Stn50.csv',                              
-                'WGap':                                   'WGap.csv',                                                     
+                'Stn14':         'Stn14.csv',                                        
+                'Stn21':         'Stn21.csv',                              
+                'Stn41':         'Stn41.csv',                              
+                'Stn49':         'Stn49.csv',                              
+                'TIBBM':         'Toronto_Islands_Blockhouse_Bay_Mouth.csv',                 
+                'TC3':           'Bot_TC3.csv',                                      
+                'Cell2':         'Cell2.csv',                                        
+                 #'EGap':        'EGap.csv',                                        
+                'EmbCOB':        'Emb_C_Outside_Berm.csv',                                     
+                'SimcoeDock':    'Simcoe_Slip.csv',                                           
+                'Stn19':         'Stn19.csv',                                        
+                'Stn22':         'Stn22.csv',                              
+                #'Stn42':        'Stn42.csv',                              
+                'Stn50':         'Stn50.csv',                              
+                'WGap':          'WGap.csv',                                                     
                  
                  }
     
@@ -112,9 +112,9 @@ def Temp_FFT_analysis_all():
     tpath = paths[7]
     num_segments = 10
     ta = Temperature.Temperature(tpath, filenames, num_segments)
-    for key in sorted(ta.getDict().iterkeys()):
+    for key in sorted(ta.getDict().keys()):
         fname = ta.getDict()[key]
-        print "File: %s" % fname
+        print("File: %s" % fname)
         [dates, depths] = ta.read_temp_file(tpath, fname)
         
         #interpoate if time samolungf is > 10 min
@@ -159,7 +159,7 @@ def Temp_FFT_analysis_all():
         #ta.plotWaveletScalogram(dates, depths, tunits, title = title)
 
 def WL_FFT_analysis_all():
-    print "WL fft analysis"
+    print("WL fft analysis")
     filenames = {'Emb A':'10279443_corr.csv',
                  'Emb B':'1115681_corr.csv',
                  'Emb C':'10238147_corr.csv',
@@ -171,7 +171,7 @@ def WL_FFT_analysis_all():
     wav = False 
     num_segments = 10
     wla = Water_Level.WaterLevelAnalysis(paths[1], filenames, num_segments)
-    for key in sorted(wla.getDict().iterkeys()):
+    for key in sorted(wla.getDict().keys()):
         fname = wla.getDict()[key]
 
         [dates, depths] = wla.read_press_corr_file(paths[1], fname)
@@ -205,14 +205,14 @@ def WL_FFT_analysis_all():
         plottitle = False
         ymax = None  # 0.01
         wla.plotSingleSideAplitudeSpectrumFreq(data, funits = funits, y_label = y_label, title = title, log = logarithmic, \
-                                            fontsize = 24, tunits = tunits, plottitle = plottitle, grid = grid, \
+                                            fontsize = 20, tunits = tunits, plottitle = plottitle, grid = grid, \
                                             ymax = ymax)
 
         if wav:
             wla.plotWaveletScalogram(dates, depths, tunits, title = title)
 
-def WL_FFT_pairs():
-    num_segments = 10
+def WL_FFT_pairs(dateinterval=None):
+    num_segments = 3#10
     filenames = {'Emb A':'10279443_corr.csv',
                  'Emb B':'1115681_corr.csv',
                  'Emb C':'10238147_corr.csv',
@@ -220,19 +220,77 @@ def WL_FFT_pairs():
                  'Cell 2':'10279693_corr.csv',
                  'Cell 3':'10279699_corr.csv',
                  'Out Harb':'10279444_corr.csv',
-                 'Inn Harb':'13320-01-MAY-30-NOV-2013_out.csv'}
-    filenames = {'Out Harb':'10279444_corr.csv','Inn Harb':'13320-01-MAY-30-NOV-2013_short.csv'}
+                 'IH data':'13320-01-AUG-13-AUG-2013.csv',
+                 'TC4':'01-13-Aug-WL-TC4_out.csv',
+                 'IH model':'01-13-Aug-Water_level_Spadinapai.csv',
+                 #---------------------------
+                 'IH model T=5h':'Model-HWL-Spadina-T=5h_out.csv',
+                 'OH model T=5h':'Model-HWL-TC4-T=5h_out.csv',
+                 'IH model T=1h':'Model-HWL-Spadina-T=1h_out.csv',
+                 'OH model T=1h':'Model-HWL-TC4-T=1h_out.csv',
+                 'OH model':'Model-WL-OHSt18-5-7Aug_out.csv',
+                 'IH model':'Model-WL-Spadina-5-7Aug_out.csv',
+                 'OH model':'Model-WL-TC4-5-7Aug_out.csv',
+                 'Cell 3':'Cell3-cross_section_discharge-7-9Aug_out.csv',
+                 'Emb C':'EmbC-cross_section_discharge-7-9Aug_out.csv',
+                 'E Gap':'EG-cross_section_discharge-7-9Aug_out.csv',
+                 'IH model':'Model-HWL-Spadina-T=0.33h_out.csv',
+                 'OH model':'Model-HWL-TC4-T=0.33h_out.csv',
+                 'IH model':'Model-HWL-Spadina-T=1.7h_out.csv',
+                 'OH model':'Model-HWL-TC4-T=1.7h_out.csv',
+                 'IH model':'Model-HWL-Spadina-T=3.2h_out.csv',
+                 'OH model': 'Model-HWL-TC4-T=3.2h_out.csv'}
+                 
+    #filenames = {'Out Harb':'10279444_corr.csv','Inn Harb':'13320-01-MAY-30-NOV-2013_short.csv'}
+    filenames = {'TC4':'01-13-Aug-Water_level_TC4_out.csv','Spadina':'01-13-Aug-Water_level_Spadina_out.csv'}
+    #Original output with input from Spadina real data
+    #filenames = {'IH model':'01-13-Aug-WL-Spadina_out.csv','IH data':'13320-01-AUG-13-AUG-2013.csv'}
+    filenames = {'IH data':'13320-01-AUG-13-AUG-2013.csv', 'IH model':'01-13-Aug-WL-Spadina_out.csv'}
+    #Output with input from Spadina real data divided by 3 +shift 36 min
+    #filenames = {'IH data':'13320-01-AUG-13-AUG-2013.csv', 'IH model':'01-13-Aug-Water_level_Spadina_out.csv'}
+    #filenames = {'IH data':'13320-01-AUG-13-AUG-2013.csv', 'IH model':'Model-Spadina-Water level-2Aug2013_out.csv'}
+    #Output with input from Spadina real data divided by 3 and increased Manning friction (double to 0.046)  +shift 36 min
+    #filenames = {'IH data':'13320-01-AUG-13-AUG-2013.csv', 'IH model':'Model-Spadina-Water level-2Aug2013_out-fric0.046.csv'}
+    #Output with input from Spadina real data divided by 7 and increased Manning friction (double to 0.035)  +shift 36 min
+    filenames = {'IH data':'13320-01-AUG-13-AUG-2013.csv', 'IH model':'Model-Spadina-Water level-2Aug2013_out_X7.csv'}
+    filenames = {'IH model T=5h':'Model-HWL-Spadina-T=5h_out.csv', 'OH model T=5h':'Model-HWL-TC4-T=5h_out.csv'}
+    filenames = {'IH model T=1h':'Model-HWL-Spadina-T=1h_out.csv', 'OH model T=1h':'Model-HWL-TC4-T=1h_out.csv'}
+    filenames = {'IH model':'Model-WL-Spadina-5-7Aug_out.csv', 'IH data':'Spadina-AUG-2013.csv'}
+    filenames = {'OH model':'Model-WL-TC4-5-7Aug_out.csv', 'OH data':'St18_corr.csv'}
+    filenames = {'IH model T=3.2h':'Model-HWL-Spadina-T=3.2h_out.csv', 'OH model T=3.2h': 'Model-HWL-TC4-T=3.2h_out.csv'}
+    #filenames = {'IH model T=1.7h':'Model-HWL-Spadina-T=1.7h_out.csv', 'OH model T=1.7h': 'Model-HWL-TC4-T=1.7h_out.csv'}
+    #filenames = {'IH model T=0.33h':'Model-HWL-Spadina-T=0.33h_out.csv', 'OH model T=0.33h': 'Model-HWL-TC4-T=0.33h_out.csv'}
+    #filenames = {'IH model T=1.0h':'Model-HWL-Spadina-T=1.0h_out.csv', 'OH model T=1.0h': 'Model-HWL-TC4-T=1.0h_out.csv'}
     
-    for key, value in filenames.iteritems():
-        #fnames = [filenames['Out Harb'], value]
-        #names = ['Out Harb', key]
-        fnames = [filenames['Out Harb'], value]
-        names = ['Out Harb', key]
+    #filenames = {'Emb C':'EmbC-cross_section_discharge-7-9Aug_out.csv','E Gap':'EG-cross_section_discharge-7-9Aug_out.csv'}
+    #path_no=1
+    #path_no=9
+    path_no=8
+    for key, value in filenames.items():
         
-        wla = Water_Level.WaterLevelAnalysis(paths[1], fnames, num_segments)
-        wla.doDualSpectralAnalysis(paths[1], fnames, names, b_wavelets = False, window = "hanning", \
+        #names = ['Out Harb', key]
+        #fnames = [filenames['IH model'], value]
+        #fnames = [filenames['OH model'], filenames['OH data']]
+        #fnames = [filenames['Emb C'], filenames['E Gap']]
+        #fnames = [filenames['IH model T=5h'], filenames['OH model T=5h']]
+        fnames = [filenames['IH model T=3.2h'], filenames['OH model T=3.2h']]
+        #fnames = [filenames['IH model T=1.7h'], filenames['OH model T=1.7h']]
+        #fnames = [filenames['IH model T=0.33h'], filenames['OH model T=0.33h']]
+        #fnames = [filenames['IH model T=1.0h'], filenames['OH model T=1.0h']]
+        #names = ['Out Harb', key]
+        #names = ['TC4', key]
+        #names = ['IH model T=5h', 'OH model T=5h']
+        #names = ['Emb C', 'E GAp']
+        #names = ['OH model', 'OH data']
+        names = ['IH model T=3.2h', 'OH model T=3.2h']
+        #names = ['IH model T=1.7h', 'OH model T=1.7h']
+        #names = ['IH model T=0.33h', 'OH model T=0.33h']
+        #names = ['IH model T=1.0h', 'OH model T=1.0h']
+        
+        wla = Water_Level.WaterLevelAnalysis(paths[path_no], fnames, num_segments)
+        wla.doDualSpectralAnalysis(paths[path_no], fnames, names, b_wavelets = False, window = "hanning", \
                                    num_segments = num_segments, tunits = 'day', \
-                                   funits = "cph", filter = None, log = 'loglog', doy = True, grid = False)
+                                   funits = "cph", filter = None, log = 'loglog', doy = True, grid = False, dateinterval=dateinterval, d3d=False)
 
 def Vel_FFT_pairs(date, plotFFT = True, skipRDI = False):
 
@@ -246,7 +304,7 @@ def Vel_FFT_pairs(date, plotFFT = True, skipRDI = False):
     type = 'ampl'
     data = []
     if not skipRDI :
-        for key, value in filenames.iteritems():
+        for key, value in filenames.items():
             hyd = Hydrodynamic.Hydrodynamic(value, key, paths[2], num_segments, date, ctlname = None)
  
             hyd.readRawBinADCP()
@@ -287,7 +345,7 @@ def Temp_FFT(date, plotFFT = True, skipRDI = False):
     type = 'ampl'
     data = []
     if not skipRDI :
-        for key, value in filenames.iteritems():
+        for key, value in filenames.items():
             hyd = Hydrodynamic.Hydrodynamic(value, key, paths[2], num_segments, date, ctlname = None)
  
             hyd.readRawBinADCP()
@@ -315,34 +373,37 @@ def Temp_FFT(date, plotFFT = True, skipRDI = False):
 
 def get_Dz_Dt(adptype, path, num_segments, date, dt):
      # get the water level variations dz
-    print "WL analysis"
-    filenames = {'OH':'10279444_corr.csv', 'EmbC':'10238147_corr.csv', 'Cell3':'10279699_corr.csv', 'Cell1':'10279696_corr.csv', 'Cell2':'10279693_corr.csv'}
+    print("WL analysis")
+    filenames = {'OH':'10279444_corr.csv', 'EmbC':'10238147_corr.csv', 'Cell3':'10279699_corr.csv', \
+                 'Cell1':'10279696_corr.csv', 'Cell2':'10279693_corr.csv', \
+                 'EmbA':'10279443_corr.csv', 'EmbB':'1115681_corr.csv'}
     num_segments = 10
     wla = Water_Level.WaterLevelAnalysis(path, filenames, num_segments, date)
    
     [dates, depths] = wla.read_press_corr_file(path, filenames[adptype])
 
-    print "dtime2-0=%f, dtime2-1=%f, size=%d" % (dates[0], dates[len(dates) - 1], len(dates))
+    print("dtime2-0=%f, dtime2-1=%f, size=%d" % (dates[0], dates[len(dates) - 1], len(dates)))
     rtime, rdepths,  rdzdt, dzdt = wla.delta_z_resample(dates, depths, dt)
     #rtime2, dzdt = wla.delta_z_mov_average(dates, depths, dt)
-    print "rtime2-0=%f, rtime2-1=%f, size=%d" % (rtime[0], rtime[len(rtime) - 1], len(rtime))
+    print("rtime2-0=%f, rtime2-1=%f, size=%d" % (rtime[0], rtime[len(rtime) - 1], len(rtime)))
     return wla, rtime, rdepths, rdzdt, dates, depths, dzdt
     
-def get_Velocities(adptype, date, num_segments): 
+def get_Velocities(adptype, date, num_segments, delft3d=False, d3d_int=3): 
     if adptype == 'EmbC' or adptype == 'OH':
-        print "Process RDI-Teledyne"
+        print("Process RDI-Teledyne")
         filenames = {'EmbC':'1200mhz-EMBC_004.000', 'OH':'600mhz-DPL_002.000'}
         # hyd = Hydrodynamic.Hydrodynamic(filenames['OH'], paths[2], num_segments, date)
         hyd = Hydrodynamic.Hydrodynamic(filenames[adptype],adptype,  paths[2], num_segments, date)
         hyd.readRawBinADCP()
-        hyd.select_data_dates()
+        hyd.select_data_dates(delft3d=delft3d, d3d_int=d3d_int)
     else:
-        print "Process PC ADP" 
+        print("Process PC ADP") 
         ctlfile = 'MODE006.ctl'
         fnames = ['MODE006.ve', 'MODE006.vn', 'MODE006.vu']
         
         hyd = Hydrodynamic.Hydrodynamic(adptype, adptype, paths[3], num_segments, date, ctlname = ctlfile, filenames = fnames)
         hyd.readPcAdpVel()
+        hyd.select_data_dates(delft3d=delft3d, d3d_int=d3d_int)
             # these ones have dates already selected from reading. no select_data_dates is necessary
     #endif
     return hyd
@@ -366,7 +427,7 @@ def Dz_Dt_Du(date, bin, adptype = 'Cell3'):
     Theta = angles_from_N[adptype] #35.1287  # degrees
     tet = 2 * math.pi * Theta / 360
     up, vp = hyd.rotation_transform(tet, clockwise=False)
-    print "htime-0=%f, htime0-1=%f, size=%d" % (hyd.time[0][0], hyd.time[0][len(hyd.time[0]) - 1], len(hyd.time[0]))
+    print("htime-0=%f, htime0-1=%f, size=%d" % (hyd.time[0][0], hyd.time[0][len(hyd.time[0]) - 1], len(hyd.time[0])))
     # we are interested in u - along the longitudinal axis of the bay
     # sample average u values
     rtime1, udt = Hydrodynamic.Hydrodynamic.resample(hyd.time, vp, dt, bin)
@@ -374,7 +435,7 @@ def Dz_Dt_Du(date, bin, adptype = 'Cell3'):
 
     #print "rtime1-0=%f, rtime1-1=%f, size=%d" % (rtime1[0], rtime1[len(rtime1) - 1], len(rtime1))
     wla, rtime2, rdepths, rdzdt, dates, depths, dzdt = get_Dz_Dt(adptype, paths[1], num_segments, date, dt)
-    print "plot dz/dt - u'"
+    print("plot dz/dt - u'")
     # multiply by factor to get m/hour to match the axes labels
     wla.plot_dzdt_up_line(udt[:-3], rdzdt[:-3] * factor, labels = labels)
     wla.plot_cross_spectogram_u_dz(rtime1, udt, rtime1, numpy.array(rdzdt), scaleunit = 'hour', da = [6,300]) 
@@ -398,7 +459,7 @@ def wct_V_T(date, bin, adptype = 'Cell3'):
     Theta = angles_from_N[adptype] #35.1287  # degrees
     tet = 2 * math.pi * Theta / 360
     up, vp = hyd.rotation_transform(tet, clockwise=False)
-    print "htime-0=%f, htime0-1=%f, size=%d" % (hyd.time[0][0], hyd.time[0][len(hyd.time[0]) - 1], len(hyd.time[0]))
+    print("htime-0=%f, htime0-1=%f, size=%d" % (hyd.time[0][0], hyd.time[0][len(hyd.time[0]) - 1], len(hyd.time[0])))
     # we are interested in u - along the longitudinal axis of the bay
     # sample average u values
     rtime1, udt = Hydrodynamic.Hydrodynamic.resample(hyd.time, vp, dt, bin)
@@ -438,14 +499,14 @@ def wct_V_T(date, bin, adptype = 'Cell3'):
 
     wla.plot_cross_spectogram_u_dz(rtime1, udt, dateTime, numpy.array(temp), scaleunit = 'hour', da = [6,300])
     
-# Analysis of Boat Passage in FFNMP
-#--------------------------------------------------------------------------------------------
+
 def wct_lake_bp():
+    # Analysis of Boat Passage in FFNMP
     date = ['10/07/25 00:00:00', '10/07/30 00:00:00']
     dt = 1. / 24. / 30.  # 10 minutes hour in days
 
     # get the water level variations dz
-    print "WL analysis tobermory"
+    print("WL analysis tobermory")
     filenames = {'CIH':'LL4.csv', 'IBP':'LL1.csv', 'OBP':'LL2.csv', 'HIL':'LL3.csv'}
     num_segments = 4
 
@@ -458,16 +519,14 @@ def wct_lake_bp():
     [edates, edepths] = wla.read_press_corr_file(paths[4], fname)
 
     rtime1, rdepths1, rdz1, dz1 = wla.delta_z_resample(ldates, ldepths, dt)
-    print "rtime1=%f, rtime1=%f, size=%d" % (rtime1[0], rtime1[len(rtime1) - 1], len(rtime1))
+    print("rtime1=%f, rtime1=%f, size=%d" % (rtime1[0], rtime1[len(rtime1) - 1], len(rtime1)))
     rtime2, rdepths2, rdz2, dz2 = wla.delta_z_resample(edates, edepths, dt)
-    print "rtime2=%f, rtime2=%f, size=%d" % (rtime2[0], rtime2[len(rtime2) - 1], len(rtime2))
+    print("rtime2=%f, rtime2=%f, size=%d" % (rtime2[0], rtime2[len(rtime2) - 1], len(rtime2)))
 
     # print "plot dz/dt - u'"
     # wla.plot_dzdt_up_line(udt[:-3], dzdt[:-3])
     da = [8, 200]
     wla.plot_cross_spectogram_u_dz(rtime1, rdz1, rtime1, rdz2, scaleunit = 'hour', da = da)
-#--------------------------------------------------------------------------------------------
-
 
 def Vel_hodographs(date, dt, modd):
     data = Vel_FFT_pairs(date, plotFFT = False, skipRDI = False)
@@ -502,10 +561,10 @@ def Vel_windrose(date, skipRDI = False):
     i = 0
     for d in data:
         [name, time, results_u, results_v] = d
-        print "==============================="
-        print "Location: %s" % name
+        print("===============================")
+        print("Location: %s" % name)
         for b in bins[i]:
-            print "    bin:%d" % b
+            print("    bin:%d" % b)
             curdir, curspd = calculateVector(results_u[b], results_v[b])
             Hydrodynamic.Hydrodynamic.draw_windrose(curdir, curspd, 'bar', loc = (1, 0.05), fontsize = 20,\
                                                     unit = '[m s$^{-1}}$]', angle = 67.5) 
@@ -549,7 +608,7 @@ def Vel_profiles(date, adptype = 'Cell3', datetimes = None, firstbin=1, interval
     Theta = angles_from_N[adptype] #35.1287  # degrees
     tet = 2 * math.pi * Theta / 360
     up, vp = hyd.rotation_transform(tet, clockwise=False)
-    print "htime-0=%f, htime0-1=%f, size=%d" % (hyd.time[0][0], hyd.time[0][len(hyd.time[0]) - 1], len(hyd.time[0]))
+    print("htime-0=%f, htime0-1=%f, size=%d" % (hyd.time[0][0], hyd.time[0][len(hyd.time[0]) - 1], len(hyd.time[0])))
   
     #loop through the bins and plot
     profiles = []
@@ -648,7 +707,7 @@ def Avg_Vel_profiles(date, adptype = 'Cell3', firstbin=1, interval =1,\
     
     #if counterclockwise vp is the along the channel veloccity and + (PLUS) is toward the lake 
     #if clockwise up is the along the channel veloccity and + (PLUS) is toward the embayment 
-    print "htime-0=%f, htime0-1=%f, size=%d" % (hyd.time[0][0], hyd.time[0][len(hyd.time[0]) - 1], len(hyd.time[0]))
+    print("htime-0=%f, htime0-1=%f, size=%d" % (hyd.time[0][0], hyd.time[0][len(hyd.time[0]) - 1], len(hyd.time[0])))
   
     upw_str = '13/07/20 12:00:00'
     dt = datetime.strptime(upw_str, "%y/%m/%d %H:%M:%S")
@@ -702,7 +761,7 @@ def Avg_Vel_profiles(date, adptype = 'Cell3', firstbin=1, interval =1,\
     if grad_valong:
         # 3) Mixed water, air ,img data
         # ToDO: Add short and long radiation
-        print "Grad Valong Start display mixed subplots  "
+        print("Grad Valong Start display mixed subplots  ")
         grad = []
         V_T  = numpy.transpose(vp) 
         U_T  = numpy.transpose(up)
@@ -789,7 +848,7 @@ def Avg_Vel_profiles(date, adptype = 'Cell3', firstbin=1, interval =1,\
     if ADCPprof:
         # 3) Mixed water, air ,img data
         # ToDO: Add short and long radiation
-        print "Start display mixed subplots "
+        print("Start display mixed subplots ")
         dd = 1
         dateTimes3 = [hyd.time[:-dd], hyd.time[:-dd], hyd.time[:-dd]]
         ylabels3 = ["Depth [m]", "Depth [m]", "Depth [m]"] 
@@ -1005,13 +1064,16 @@ def subpl_wl_dz_vel(date, adptype, resampled = False, hourgrid = False, doy = Fa
     
     hyd.display_subplots(date, dateImg, dataarr, dnames = labels, yday = doy, tick = None, legend = legend, hourgrid = hourgrid, img=img, cbrange=cbrange, maxdepth = maxdepth[adptype])
 
-def calc_velocities(adptype, date, avg=True, interv = 1, resampled =False):
+def calc_velocities(adptype, date, avg=True, interv = 1, resampled =False, delft3d=False):
     '''
     Calculates the Depth averaged velocity at the vertical of the ADCP
     @param interv: = 1 #hours
     @param avg: False/True. False: calculate the velocity per vertical slice every interval; 
                             True : calculate one average velocity per whole section every interval
     '''
+    
+    if adptype not in ['OH', 'EmbC','Cell3']:
+        return
     # 1 Get velocities
      #angles_from_N = {'OH':37, 'EmbC':127,'Cell3':137}    # for clockwise
                                                           # + sign is into Cell3   and to Cherry beach
@@ -1070,15 +1132,33 @@ def calc_velocities(adptype, date, avg=True, interv = 1, resampled =False):
     volplus =  CrossArea[adptype]*numpy.sum(numpy.array(pos_vel)*dt0)*84600   
     volminus =  CrossArea[adptype]*numpy.sum(numpy.array(neg_vel)*dt0)*84600
 
-    print "Loc=%s Vol+=%f m^3  Vol-=%f m^3" % (adptype, volplus, volminus)
+    print("Loc=%s Vol+=%f m^3  Vol-=%f m^3" % (adptype, volplus, volminus))
     qplus=volplus/tottime 
     qminus=volminus/tottime
-    print "Loc=%s Q+=%f m^3/day Q-=%f m^3/day" % (adptype, qplus, qminus)
+    print("Loc=%s Q+=%f m^3/day Q-=%f m^3/day" % (adptype, qplus, qminus))
     fname = paths[5] + "/"+ adptype+"volumes.csv"
     data = [adptype, date, qplus, qminus]
-    hyd.writeVeltoCSV(fname, data, append = True)
+    hyd.writeVeltoCSV(fname, data, append = True, delft3d=delft3d)
     return qplus, qminus
+
+
+def get_delft3d_velocities(date, adptype = 'Cell3', interv=3):
+
+    #angles_from_N = {'OH':37, 'EmbC':127,'Cell3':137}    # for clockwise
+                                                          # + sign is into Cell3   and to Cherry beach
+    angles_from_N = {'OH':143, 'EmbC':53,'Cell3':43}      # for counter clockwise   and vp the along dir
+                                                          #+ direction is TO outer harbour and to Lake Ontario    
+    num_segments = 10
+        
+    factor = 1.  # 1 hour in days
+    factor = 6.  # 10 minutes  in days
+    d3d_int_min = interv
+    dt = 1. / 24. / factor
+    labels = [' velocity [m/s]', 'dz/dt [m/h]']
+
+    hyd = get_Velocities(adptype, date, num_segments, delft3d=True, d3d_int=d3d_int_min)
     
+   
 def calc_flush_time(adptype, date, level, avg=True, interv = 1, resampled =False, umaxcorr= True):
     filemapping = {"Cell3": 'Cell3_Elev_level_maxdepth_volume_area.csv', 
                    "EmbC":'EmbC_Elev_level_maxdepth_volume_area.csv', 
@@ -1096,17 +1176,20 @@ def calc_flush_time(adptype, date, level, avg=True, interv = 1, resampled =False
     fname = paths[5] + "/"+ filemapping[adptype]
     maxdepth, volume, area = Hydrodynamic.Hydrodynamic.ReadVolfromCSV(fname, level)
     FDT = volume/((qplus_corr-qminus_corr)/2)
-    print "%s  Flusing time scale = %f [days]" % (adptype, FDT)
+    print("%s  Flushing time scale = %f [days]" % (adptype, FDT))
     fname = paths[5] + "/"+ adptype+"_FDT.csv"
     Hydrodynamic.Hydrodynamic.writeVeltoCSV(fname, [adptype, date, "Flushing TS [days]", FDT], append = True)
 
-def calc_velocities_by_dh(adptype, date, avg=True, interv = 1, resampled =False, filemapping = None):
+
+def calc_velocities_by_dh(adptype, date, avg=True, interv = 1, resampled =False, filemapping = None, trebitz=False):
     maxdepth = {'OH':6.5, 'EmbC':5.0,'Cell3':4.5}
     pairs = {'Cell1':["Cell1", "Cell2"], 
              'Cell2':["Cell2", "Cell3"],
              'Cell3':["Cell3", "EmbC"],
              'EmbC':["EmbC", "OH"],
-             'OH':["OH", "LO"]}
+             'OH':["OH", "LO"],
+             'EmbA':["EmbA", "OH"],
+             'EmbB':["EmbB", "OH"]}
     
     num_segments = 10
     
@@ -1125,37 +1208,52 @@ def calc_velocities_by_dh(adptype, date, avg=True, interv = 1, resampled =False,
     volplus=0
     volminus=0
     tottime=0
+    Z=0  #trebitz initial sum
     for i in range(0, len(dates1)-1):
-        dz = depths1[i+1]-depths1[i]  
-        V=area*dz
+        dz = depths1[i+1]-depths1[i]
         tottime +=dates1[1]-dates1[0]  
-        if V> 0:
-            volplus+=V
+        if trebitz:
+            Z+=0.5*abs(dz)
+            V=area*Z
+            qplus=V/tottime 
+            qminus=V/tottime
         else:
-            volminus+=V
+            V=area*dz
+              
+            if V> 0:
+                volplus+=V
+            else:
+                volminus+=V
+        
+            qplus=volplus/tottime 
+            qminus=volminus/tottime
     
-    qplus=volplus/tottime 
-    qminus=volminus/tottime
-    
-    print "Loc=%s Q+=%f m^3/day Q-=%f m^3/day" % (adptype, qplus, qminus)
+    print("Loc=%s Q+=%f m^3/day Q-=%f m^3/day" % (adptype, qplus, qminus))
     return qplus, qminus
 
     
     #add one more to dzdt since is intepolated between nodes and prfiles are on nodes.
 
-def calc_flush_time_by_dh(adptype, date, level, avg=True, interv = 1, resampled =False, umaxcorr= True):
+def calc_flush_time_by_dh(adptype, date, level, avg=True, interv = 1, resampled =False, umaxcorr= True, trebitz=False):
     filemapping = {"Cell1": 'Cell1_Elev_level_maxdepth_volume_area.csv',
                    "Cell2": 'Cell2_Elev_level_maxdepth_volume_area.csv',
                    "Cell3": 'Cell3_Elev_level_maxdepth_volume_area.csv', 
-                   "EmbC":'EmbC_Elev_level_maxdepth_volume_area.csv', 
-                   "OH":'OuterHarbourElev_level_maxdepth_volume_area.csv' }
+                   "EmbC" : 'EmbC_Elev_level_maxdepth_volume_area.csv', 
+                   "OH"   : 'OuterHarbourElev_level_maxdepth_volume_area.csv',
+                   "EmbA" : 'EmbA_Elev_level_maxdepth_volume_area.csv', 
+                   "EmbB" : 'EmbB_Elev_level_maxdepth_volume_area.csv', }
                    #"OH":'InnerOuterHarbourElev_level_maxdepth_volume_area.csv' }    
-    qplus, qminus = calc_velocities_by_dh(adptype, date, avg=avg, interv = interv, resampled=resampled, filemapping=filemapping)
+    qplus, qminus = calc_velocities_by_dh(adptype, date, avg=avg, interv = interv, resampled=resampled, \
+                                          filemapping=filemapping,trebitz=trebitz)
         
     fname = paths[5] + "/"+ filemapping[adptype]
     maxdepth, volume, area = Hydrodynamic.Hydrodynamic.ReadVolfromCSV(fname, level)
-    FDT = volume/((qplus-qminus)/2)
-    print "%s  Flusing time scale = %f [days]" % (adptype, FDT)
+    print("maxdepth = %f [m] volume = %f [m^3] area = %f [m^2]" % (maxdepth, volume, area))
+    if trebitz:
+        FDT = volume/qplus 
+    else:
+        FDT = volume/((qplus-qminus)/2)
+    print("%s  Flusing time scale = %f [days]" % (adptype, FDT))
     fname = paths[5] + "/"+ adptype+"_DZ_FDT.csv"
     Hydrodynamic.Hydrodynamic.writeVeltoCSV(fname, [adptype, date, "Flushing TS [days]", FDT], append = True)
 
@@ -1176,14 +1274,14 @@ def plot_ctd():
 
     
 
-def read_lake_and_harbour_data(str_date, date, water_path, harbour_path):
+def read_lake_and_harbour_data(str_date, date, water_path, harbour_path, just_lake=False):
     locale.setlocale(locale.LC_TIME, 'en_US.UTF-8')
 
-    print "Start read_lake_and_harboud_data"
+    print("Start read_lake_and_harboud_data")
     start_num = date[0]
     end_num = date[1]
      # 1) read all lake data
-    base, dirs, files = iter(os.walk(water_path)).next()
+    base, dirs, files = next(iter(os.walk(water_path)))
     sorted_files = sorted(files, key = lambda x: x.split('.')[0])
 
     dateTimeArr = numpy.zeros(len(sorted_files), dtype = numpy.ndarray)
@@ -1200,35 +1298,38 @@ def read_lake_and_harbour_data(str_date, date, water_path, harbour_path):
         k[i] = numpy.append(k[i], i)
         i += 1
     # end for
-    # 1') read all harbour data (EG + Jarvis Dock
-    base, dirs, files = iter(os.walk(harbour_path)).next()
-    sorted_files = sorted(files, key = lambda x: x.split('.')[0])
-
-    TH_dateTimeArr = numpy.zeros(len(sorted_files), dtype = numpy.ndarray)
-    TH_tempArr = numpy.zeros(len(sorted_files), dtype = numpy.ndarray)
-    TH_resultsArr = numpy.zeros(len(sorted_files), dtype = numpy.ndarray)
-    TH_k = numpy.zeros(len(sorted_files), dtype = numpy.ndarray)
-    i = 0
-    for fname in sorted_files:
-        dateTime, temp, results = utools.readTempHoboFiles.get_data_from_file(fname, window_hour, windows[1], timeinterv = date, rpath = harbour_path)
-        maxidx = 300000
-        TH_dateTimeArr[i] = numpy.append(TH_dateTimeArr[i], dateTime[:maxidx])
-        TH_resultsArr[i] = numpy.append(TH_resultsArr[i], results[:maxidx])
-        TH_tempArr[i] = numpy.append(TH_tempArr[i], temp[:maxidx])
-        TH_k[i] = numpy.append(TH_k[i], i)
-        i += 1
-    # end for
-    return [dateTimeArr, resultsArr, tempArr, TH_dateTimeArr, TH_resultsArr, TH_tempArr]
+    if not just_lake:
+        # 1') read all harbour data (EG + Jarvis Dock
+        base, dirs, files = next(iter(os.walk(harbour_path)))
+        sorted_files = sorted(files, key = lambda x: x.split('.')[0])
+    
+        TH_dateTimeArr = numpy.zeros(len(sorted_files), dtype = numpy.ndarray)
+        TH_tempArr = numpy.zeros(len(sorted_files), dtype = numpy.ndarray)
+        TH_resultsArr = numpy.zeros(len(sorted_files), dtype = numpy.ndarray)
+        TH_k = numpy.zeros(len(sorted_files), dtype = numpy.ndarray)
+        i = 0
+        for fname in sorted_files:
+            dateTime, temp, results = utools.readTempHoboFiles.get_data_from_file(fname, window_hour, windows[1], timeinterv = date, rpath = harbour_path)
+            maxidx = 300000
+            TH_dateTimeArr[i] = numpy.append(TH_dateTimeArr[i], dateTime[:maxidx])
+            TH_resultsArr[i] = numpy.append(TH_resultsArr[i], results[:maxidx])
+            TH_tempArr[i] = numpy.append(TH_tempArr[i], temp[:maxidx])
+            TH_k[i] = numpy.append(TH_k[i], i)
+            i += 1
+        # end for
+        return [dateTimeArr, resultsArr, tempArr, TH_dateTimeArr, TH_resultsArr, TH_tempArr]
+    return [dateTimeArr, resultsArr, tempArr, [], [], []]
 
         
-def subplot_lake_harbour(str_date, date, adptype):
+def subplot_lake_harbour(str_date, date, adptype, just_lake=False):
     resampled =False
     locale.setlocale(locale.LC_TIME, 'en_US.UTF-8')
 
     water_path = '/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Hobo-Apr-Nov-2013/TC-LakeOntario/csv_processed'
+    water_path = '/home/bogdan/Documents/UofT/PhD/Data_Files/2012/MOE-Apr-May_2012-Thermistor_chain/csv_processed'
     harbour_path = '/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Hobo-Apr-Nov-2013/AllHarbour/csv_processed/EGap-JarvisDock'
 
-    print "Start sublpot_lake_harbour "
+    print("Start subplot_lake_harbour ")
     start_num = date[0]
     end_num = date[1]
 
@@ -1243,144 +1344,157 @@ def subplot_lake_harbour(str_date, date, adptype):
     factor = 1.  # 1 hour in days
     dt = 1. / 24. / factor
 
-    hyd = get_Velocities(adptype, str_date, num_segments)
-
-    #reproject on the direction of thde flow
-    Theta = angles_from_N[adptype] #35.1287  # degrees
-    tet = 2 * math.pi * Theta / 360
-    up, vp = hyd.rotation_transform(tet, clockwise=False)
-
-    rvp = []
-    #imgs do not resample
-    if adptype == "OH":
-        vp = vp[:-2].tolist()
-        hyd.time = hyd.time[:-2]
-    elif adptype == "EmbC":
-        vp = vp[:-1].tolist()
-        hyd.time = hyd.time[:-1]
-    elif adptype == "Cell3": 
-        #up = up[:-1].tolist()
-        vp = vp.tolist()
-    else:
-        vp = vp.tolist()
-         
-    #reverse the list for plotting   
-    vp = vp[::-1]
-            
-    if resampled:
-        for i in range(0,len(up)):
-            rvtime,rvpi = hyd.resample(hyd.time, vp, dt, i)
-            rvp.append(rvpi[:-10])
-        rvtime = rvtime[:-10]
-    else:
-        rvp=vp
-        
-    # 2 get Dz
-    daterange = [str_date[0], str_date[-1]]
-    wla, rtime, rdepths, rdzdt, dates, depths, dzdt = get_Dz_Dt(adptype, paths[1], num_segments, daterange, dt)
-    #add one more to dzdt since is intepolated between nodes and prfiles are on nodes.
+    if not just_lake:
+        hyd = get_Velocities(adptype, str_date, num_segments)
     
-    legend = []
-    legend.append("Water level") 
+        #reproject on the direction of thde flow
+        Theta = angles_from_N[adptype] #35.1287  # degrees
+        tet = 2 * math.pi * Theta / 360
+        up, vp = hyd.rotation_transform(tet, clockwise=False)
+    
+        rvp = []
+        #imgs do not resample
+        if adptype == "OH":
+            vp = vp[:-2].tolist()
+            hyd.time = hyd.time[:-2]
+        elif adptype == "EmbC":
+            vp = vp[:-1].tolist()
+            hyd.time = hyd.time[:-1]
+        elif adptype == "Cell3": 
+            #up = up[:-1].tolist()
+            vp = vp.tolist()
+        else:
+            vp = vp.tolist()
+             
+        #reverse the list for plotting   
+        vp = vp[::-1]
+                
+        if resampled:
+            for i in range(0,len(up)):
+                rvtime,rvpi = hyd.resample(hyd.time, vp, dt, i)
+                rvp.append(rvpi[:-10])
+            rvtime = rvtime[:-10]
+        else:
+            rvp=vp
+            
+        # 2 get Dz
+        daterange = [str_date[0], str_date[-1]]
+        wla, rtime, rdepths, rdzdt, dates, depths, dzdt = get_Dz_Dt(adptype, paths[1], num_segments, daterange, dt)
+        #add one more to dzdt since is intepolated between nodes and prfiles are on nodes.
+        
+        legend = []
+        legend.append("Water level") 
+    #end if
     
     # 1) read all lake data
     # 1') read all harbour data (EG + Jarvis Dock
 
     [dateTimeArr, resultsArr, tempArr, TH_dateTimeArr, TH_resultsArr, TH_tempArr] = \
-        read_lake_and_harbour_data(str_date, date, water_path, harbour_path)
+        read_lake_and_harbour_data(str_date, date, water_path, harbour_path, just_lake)
 
-    # 2'') read temperature diff at TC4
-    diffpath = water_path + "/../../TC-OuterHarbour/colormap"
-    base, dirs, files = iter(os.walk(diffpath)).next()
-
-    sorted_files = sorted(files, key = lambda x: x.split('.')[0])
-
-    cmdateTimeArr = []
-    cmtempArr = []
-    cmresultsArr = []
-    cmk = []
-    j = i = 0
-    nsorted_files = sorted_files[:]
-    for fname in sorted_files:
-        print "Filename = %s" % fname
-        dateTime, temp, results = utools.readTempHoboFiles.get_data_from_file(fname, window_6hour, windows[1], timeinterv = date, rpath = diffpath)
-        cmdateTimeArr.append(dateTime)
-        cmresultsArr.append(results)
-        cmtempArr.append(temp)
-        cmk.append(j)
-        i += 1
-        j += 1
-    # end for
-
-    # plot the temperature not the smoothed ones
-    ndateTimeArr = numpy.array(cmdateTimeArr)
-    ntempArr = numpy.array(cmtempArr)
-    nresultsArr = numpy.array(cmresultsArr)
-    nk = numpy.array(cmk)
-    diffarr = numpy.array(ntempArr[1]) - numpy.array(ntempArr[0])
-
-    # plot the temperature not the smoothed ones - ONLY for test
-    # datetype = 'dayofyear'
-    # display_data.display_temperatures(dateTimeArr, tempArr, k, fnames = sorted_files, custom = "Temperature Toronto Waterfront Zones $^oC$", \
-    #                                  datetype = datetype)
-    # display_data.display_img_temperatures(dateTimeArr, tempArr, resultsArr, k, tick, maxdepth, firstlogdepth, maxtemp, fontsize = 18, datetype = datetype)
-
-
+    if not just_lake: 
+        # 2'') read temperature diff at TC4
+        diffpath = water_path + "/../../TC-OuterHarbour/colormap"
+        base, dirs, files = next(iter(os.walk(diffpath)))
     
-    # Time domain analysis
-    lowcut = 1.0 / (24 * 10) / 3600
-    highcut = 1.0 / (24 * 3) / 3600
-    tunits = 'day'
-
-    if tunits == 'day':
-        factor = 86400
-    elif tunits == 'hour':
-        factor = 3600
-    else:
-        factor = 1
-
+        sorted_files = sorted(files, key = lambda x: x.split('.')[0])
     
-    # 3) Mixed water, air ,img data
-    custom = numpy.array([r'Wind spd [$\mathsf{km\cdot h^{-1}}$]', 'Air [T($^\circ$C]', 'Water T[$^\circ$C]', ])
-    # ToDO: Add short and long radiation
-    print "Start display mixed subplots "
-    
-    dateTimes3 = [hyd.time, TH_dateTimeArr, dateTimeArr]
-    ylabels3 = ["Depth [m]", "Depth [m]", "Depth [m]"] 
-    #imgs = [TH_resultsArr, resultsArr] #Harbour first
-    imgs = [vp,TH_resultsArr, resultsArr]
-    
-    
-    t11 = ['0', '2', '4.5', '7']
-    t12 = [7, 4.5, 2, 0]
-    
-    t21 = ['0', '3', '6', '10']
-    t22 = [10, 6, 3, 0]
-    
-    t31 = ['0', '6', '13', '20', '27']
-    t32 = [27, 20, 13.5, 6.5, 0]
-    
-    
-    tick = [[t11, t12], [t21, t22], [t31, t32]]
-    
-    #limits = [None, None, [-1, 10], None, None ] <= this datesscrews up the tickers 
-    limits = None
+        cmdateTimeArr = []
+        cmtempArr = []
+        cmresultsArr = []
+        cmk = []
+        j = i = 0
+        nsorted_files = sorted_files[:]
+        for fname in sorted_files:
+            print("Filename = %s" % fname)
+            dateTime, temp, results = utools.readTempHoboFiles.get_data_from_file(fname, window_6hour, windows[1], timeinterv = date, rpath = diffpath)
+            cmdateTimeArr.append(dateTime)
+            cmresultsArr.append(results)
+            cmtempArr.append(temp)
+            cmk.append(j)
+            i += 1
+            j += 1
+        # end for
+    else:    
+        # plot the temperature not the smoothed ones - ONLY for test
+        datetype = 'dayofyear'
+        # display_data.display_temperatures(dateTimeArr, tempArr, k, fnames = sorted_files, custom = "Temperature Toronto Waterfront Zones $^oC$", \
+        #                                  datetype = datetype)
+            
+        #limits = [None, None, [-1, 10], None, None ] <= this datesscrews up the tickers 
+        limits = None
+            
+        maxdepth = 27
+        firstlogdepth = 3
+        maxtemp = 26
+        mintemps = 0
+        mindepths = 0
+        t31 = ['0', '6', '13', '20', '27']
+        t32 = [27, 20, 13.5, 6.5, 0]
+        tick = [t31, t32]
         
-    #maxdepth = [9, 27] # Harbour first
-    maxdepth = [7, 9, 27]
-    #firstlogdepth = [0, 3] Harbour first
-    firstlogdepth = [0, 0, 3]
+        utools.display_data.display_img_temperatures(dateTimeArr, tempArr, resultsArr, 1, tick, maxdepth, firstlogdepth, maxtemp, \
+                                                     fontsize = 18, datetype = datetype, thermocline = True, interp = None, \
+                                                     ycustom = None, cblabel = "T [$^\circ$C]", draw_hline = False, hline_freq = 2)
+
+
     
-    maxtemp = [0.5, 26, 26]
-    mintemps = [-0.5, 0, 0]
-    mindepths = [0, 0, 0]
+    if not just_lake: 
+        # Time domain analysis
+        lowcut = 1.0 / (24 * 10) / 3600
+        highcut = 1.0 / (24 * 3) / 3600
+        tunits = 'day'
     
-    utools.display_data.display_mixed_subplot(dateTimes1 = [rtime[:-1]], data = [rdepths[:-1]], varnames = ["Water level"], ylabels1 = ["Depth [m]"], \
-                                       dateTimes2 = [], groups = [], groupnames = [], ylabels2 = [], \
-                                       dateTimes3 = dateTimes3, imgs = imgs, ylabels3 = ylabels3, ticks = tick, maxdepths = maxdepth, \
-                                        mindepths = mindepths, mintemps = mintemps, firstlogs = firstlogdepth, maxtemps = maxtemp, \
-                          fnames = None, revert = False, custom = None, maxdepth = None, tick = None, firstlog = None, yday = True, \
-                          title = False, grid = False, limits = limits, sharex = True, fontsize = 18, group_first = False, interp = 2)
+        if tunits == 'day':
+            factor = 86400
+        elif tunits == 'hour':
+            factor = 3600
+        else:
+            factor = 1
+    
+        
+        # 3) Mixed water, air ,img data
+        custom = numpy.array([r'Wind spd [$\mathsf{km\cdot h^{-1}}$]', 'Air [T($^\circ$C]', 'Water T[$^\circ$C]', ])
+        # ToDO: Add short and long radiation
+        print("Start display mixed subplots ")
+        
+        dateTimes3 = [hyd.time, TH_dateTimeArr, dateTimeArr]
+        ylabels3 = ["Depth [m]", "Depth [m]", "Depth [m]"] 
+        #imgs = [TH_resultsArr, resultsArr] #Harbour first
+        imgs = [vp,TH_resultsArr, resultsArr]
+        
+        
+        t11 = ['0', '2', '4.5', '7']
+        t12 = [7, 4.5, 2, 0]
+        
+        t21 = ['0', '3', '6', '10']
+        t22 = [10, 6, 3, 0]
+        
+        t31 = ['0', '6', '13', '20', '27']
+        t32 = [27, 20, 13.5, 6.5, 0]
+        
+        
+        tick = [[t11, t12], [t21, t22], [t31, t32]]
+        
+        #limits = [None, None, [-1, 10], None, None ] <= this datesscrews up the tickers 
+        limits = None
+            
+        #maxdepth = [9, 27] # Harbour first
+        maxdepth = [7, 9, 27]
+        #firstlogdepth = [0, 3] Harbour first
+        firstlogdepth = [0, 0, 3]
+        
+        maxtemp = [0.5, 26, 26]
+        mintemps = [-0.5, 0, 0]
+        mindepths = [0, 0, 0]
+        
+        utools.display_data.display_mixed_subplot(dateTimes1 = [rtime[:-1]], data = [rdepths[:-1]], varnames = ["Water level"], ylabels1 = ["Depth [m]"], \
+                                           dateTimes2 = [], groups = [], groupnames = [], ylabels2 = [], \
+                                           dateTimes3 = dateTimes3, imgs = imgs, ylabels3 = ylabels3, ticks = tick, maxdepths = maxdepth, \
+                                            mindepths = mindepths, mintemps = mintemps, firstlogs = firstlogdepth, maxtemps = maxtemp, \
+                              fnames = None, revert = False, custom = None, maxdepth = None, tick = None, firstlog = None, yday = True, \
+                              title = False, grid = False, limits = limits, sharex = True, fontsize = 18, group_first = False, interp = 2)
+    #end if
 
 
 
@@ -1391,7 +1505,7 @@ def subplot_Dz_ADCP_T_harbour(str_date, date, adptype, one_V = False):
     water_path = '/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Hobo-Apr-Nov-2013/TC-LakeOntario/csv_processed'
     harbour_path = '/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Hobo-Apr-Nov-2013/AllHarbour/csv_processed/EGap-JarvisDock'
 
-    print "Start sublpot_Dz_ADCP_harbour "
+    print("Start sublpot_Dz_ADCP_harbour ")
     start_num = date[0]
     end_num = date[1]
 
@@ -1443,7 +1557,7 @@ def subplot_Dz_ADCP_T_harbour(str_date, date, adptype, one_V = False):
             
     # 3) ADCP data 
     # ToDO: Add short and long radiation
-    print "Grad Vel calc "
+    print("Grad Vel calc ")
     grad = []
     dz =1
     V_T  = numpy.transpose(vp) 
@@ -1488,7 +1602,7 @@ def subplot_Dz_ADCP_T_harbour(str_date, date, adptype, one_V = False):
 
     # 2'') read temperature diff at TC4
     diffpath = water_path + "/../../TC-OuterHarbour/colormap"
-    base, dirs, files = iter(os.walk(diffpath)).next()
+    base, dirs, files = next(iter(os.walk(diffpath)))
 
     sorted_files = sorted(files, key = lambda x: x.split('.')[0])
 
@@ -1499,7 +1613,7 @@ def subplot_Dz_ADCP_T_harbour(str_date, date, adptype, one_V = False):
     j = i = 0
     nsorted_files = sorted_files[:]
     for fname in sorted_files:
-        print "Filename = %s" % fname
+        print("Filename = %s" % fname)
         dateTime, temp, results = utools.readTempHoboFiles.get_data_from_file(fname, window_6hour, windows[1], timeinterv = date, rpath = diffpath)
         cmdateTimeArr.append(dateTime)
         cmresultsArr.append(results)
@@ -1679,21 +1793,20 @@ if __name__ == '__main__':
     #v = 'wl_fft_all'
     #v = 'vel_fft_pairs'
     #v = 'temp_fft'
-    #v = 'wl_fft_pairs'
+    v = 'wl_fft_pairs'
     #v = 'plot_fft_v_T_wl'
-    #v = 'calc_vel'
-    
-    #v = 'calc_vel_dh' 
+    #v = 'calc_vel_flush'
+    #v = 'calc_vel_flush_dh' 
     #v = 'temp_fft_all'
     #v = 'conv_wl_delft3d_min'
     #v = 'ctd'
     #v = "subplot_lake_harbour"
-    
     #v = 'subplot_Dz_ADCP_T_harbour'
     #v = "wct_v_t"
-    v = 'avg-vel-profiles'
-    #v = "dt_tres_H_d"
-    
+    #v = 'avg-vel-profiles'
+    #v = "dt_meas_calc"
+    #v = 'calc_delft3d_vel'
+    # v = "stddev_T"
     # map the inputs to the function blocks
     for case in switch(v):
         if case('wl_fft_all'):
@@ -1703,7 +1816,9 @@ if __name__ == '__main__':
             Temp_FFT_analysis_all()
             break
         if case('wl_fft_pairs'):
-            WL_FFT_pairs()
+            dates = ['13/08/03 00:00:00', '13/08/04 00:00:00']
+            #dates = ['13/04/06 00:00:00', '13/04/07 00:00:00'] 
+            WL_FFT_pairs(dateinterval=dates)
             break
         if case('vel_fft_pairs'):
             Vel_FFT_pairs(date, skipRDI= True)
@@ -1837,7 +1952,16 @@ if __name__ == '__main__':
             drawslope = False
             plot_FFT_V_T_WL(location, date, scale = 'log', drawslope = drawslope)
             break
-        if case ('calc_vel'):
+        if case ('calc_delft3d_vel'):
+            date = ['13/08/01 00:00:00', '13/08/31 00:00:00']    # TOO LONG
+            interv = 3 #min
+            loc="OH"
+            loc="Cell3"
+            #loc="EmbC"
+            get_delft3d_velocities(date, adptype = loc, interv=interv)
+            break
+        
+        if case ('calc_vel_flush'):
             date = ['13/06/25 00:00:00', '13/08/16 00:00:00']    # TOO LONG
             date = ['13/07/10 00:00:00', '13/07/28 23:00:00']    # Upwelling
             date = ['13/07/29 00:00:00', '13/08/12 23:00:00']    # NO Upwelling
@@ -1853,7 +1977,7 @@ if __name__ == '__main__':
             #calc_velocities(loc,date, avg=avg, interv=interv, resampled = False)
             calc_flush_time(loc, date, level, avg=avg, interv = interv, resampled =False)
             break
-        if case ('calc_vel_dh'):
+        if case ('calc_vel_flush_dh'):
             date = ['13/06/25 00:00:00', '13/08/16 00:00:00']    # TOO LONG
             date = ['13/07/10 00:00:00', '13/07/28 23:00:00']    # Upwelling
             date = ['13/07/29 00:00:00', '13/08/12 23:00:00']    # NO Upwelling
@@ -1867,9 +1991,14 @@ if __name__ == '__main__':
             #loc="EmbC"
             #loc="Cell2"
             #loc="Cell1"
+            #loc="EmbB"
+            #loc="EmbA"
             level = 74
-            #calc_velocities(loc,date, avg=avg, interv=interv, resampled = False)
-            calc_flush_time_by_dh(loc, date, level, avg=avg, interv = interv, resampled =False)
+            ADCP=False
+            if ADCP:
+                calc_velocities(loc, date, avg=avg, interv=interv, resampled = False)
+            trebitz=True
+            calc_flush_time_by_dh(loc, date, level, avg=avg, interv = interv, resampled =False, trebitz=trebitz)
             break
         if case ("conv_wl_delft3d_min"):
             date = ['13/06/25 00:00:00', '13/08/16 00:00:00']    # TOO LONG
@@ -1878,20 +2007,21 @@ if __name__ == '__main__':
             fn="10279444_corr.csv"
             step_min = 60
             ta = calculate_min_since_20010101000000(pathwl, fn, step_min, date)
-            print ta
+            print(ta)
             convert_wl_to_delft3d_tim(pathwl, fn, step_min, date, start_WL[date[0]], ta)
             break
         if case ("ctd"):
             plot_ctd()
             break
         if case ("subplot_lake_harbour"):
-            
+            #for Liset 2012
+            date = ['12/06/15 00:00:00', '12/09/30 00:00:00'] 
             dt = datetime.strptime(date[0], "%y/%m/%d %H:%M:%S")
             start_num = dates.date2num(dt)
             dt = datetime.strptime(date[1], "%y/%m/%d %H:%M:%S")
             end_num = dates.date2num(dt)
             adptype = "EmbC"
-            subplot_lake_harbour(date, [start_num, end_num], adptype)
+            subplot_lake_harbour(date, [start_num, end_num], adptype, just_lake=True)
             break
         if case ("subplot_Dz_ADCP_T_harbour"):
             dt = datetime.strptime(date[0], "%y/%m/%d %H:%M:%S")
@@ -1909,26 +2039,104 @@ if __name__ == '__main__':
             adptype = 'OH'
             wct_V_T(date, bin, adptype)
             break
-        
-        if case("dt_tres_H_d"):
-            points = [["C1", [9.5, 2.1]],
-                      ["C2", [1.18, 1.6]],
-                      ["C3", [6, 7.4]],
-                      ["EC", [2.3, 4.3]],
-                      ["OH", [1.5, 8.9]], 
-                      ]
+      
+        if case("dt_meas_calc"):
+            ''' 
+            Station: ea,  mean: 12.364103  max: 16.654000 min: 5.616000
+            Station: ohtc3,  mean: 10.264501  max: 17.153000 min: 4.844000
+            Station: ec,  mean: 12.833353  max: 17.177000 min: 7.695000
+            Station: oh21,  mean: 13.641496  max: 20.627000 min: 4.895000
+            Station: eb,  mean: 18.505002  max: 25.574000 min: 8.145000
+            Station: c2,  mean: 20.343706  max: 26.940000 min: 14.888000
+            Station: lo12,  mean: 9.855198  max: 16.773000 min: 4.350000
+            Station: c3,  mean: 19.853106  max: 25.598000 min: 14.098000
+            Station: oh02,  mean: 10.955305  max: 19.222000 min: 5.050000
+            Station: c1,  mean: 23.986042  max: 30.268000 min: 19.936000
+            Chain 0):
+               bay: 1,  dt(oh-lake): 1.765236
+               bay: 2,  dt(ec-lake): 2.978155
+               bay: 3,  dt(c3-lake): 9.997908
+               bay: 4,  dt(c2-lake): 10.488507
+               bay: 5,  dt(c1-lake): 14.130844
+            Chain 1):
+               bay: 1,  dt(oh-lake): 1.765236
+               bay: 2,  dt(eb-lake): 8.649804
+            Chain 2):
+               bay: 1,  dt(oh-lake): 1.765236
+               bay: 2,  dt(ea-lake): 2.508904
+            ----------------------------------------------------------------------------------
+            For H=74
+            ----------------------------------------------------------------------------------
+            Station    Meas. ΔT [ºC]    Res time [days]    Mean  depth [m]    Mean temp [ºC]
+            ----------------------------------------------------------------------------------
+            OH              3               1.5                 9.5             12.8
+            Emb. C         6.4              2.8                 3.5             16.4
+            Cell 3         7.7             6/8.6              7.6/6.2           18.1
+            Cell 2         10.4            1.18/5.18           1.6/1.2          20.4
+            Cell 1 Shidan  13.2             9.7                 0.6             24.2
+            Emb  A                          1.25                2.6      
+            Emb  B                          0.6                 1.19            
+            '''
+            #stations  = ["OH", "Emb C", "Cell 3", "Cell 2", "Cell 1", "Emb B", "Emb A"]
+            stations  = ["Cell 1", "Cell 2", "Cell 3", "Emb A", "Emb B", "Emb C", "OH"]
+            #depths    = [8.9 , 3.5, 7.2, 1.2, 1.3, ,]
+            
+            range_x   = 10
+            range_y   = 10
+            # The valuse below are credible and not fabricated
+            # Calculated Residence time, mean depth, delta T meas, mean temp 
+            stddev = {"C1": 2.693083-1, 
+                     "C2": 2.514186-1,
+                     "C3": 2.1890-1,
+                     "EA": 3.467984-1,
+                     "EB": 3.383678-1,
+                     "EC": 2.084654-1,
+                     "OH": 3.328926-1,
+                     "LO": 3.034539-1}
+
+            points = {
+                      "C1": [[5.7, 1.3, 14.1, 23.98], stddev["C1"]],          # with the current area/vol - res time =2.17
+                      "C2": [[2.1, 0.8, 10.4, 20.34], stddev["C2"]],          # res 1.1 ->2.1 
+                      "C3": [[6.9,  6.1, 5.9, 15.3], stddev["C3"]],           # res 6 -> 6.9  dept 6.8 -> 6.1 mean deltaT 9->4.5 temp 19->14.5         
+                      "EA": [[1.3, 2.6, 2.5, 12.36], stddev["EA"]],
+                      "EB": [[0.6, 1.19, 8.6, 18.5], stddev["EB"]],           #
+                      "EC": [[2.8, 3.3, 3.0, 12.8], stddev["EC"]],
+                      "OH": [[3.2, 8.9, 1.7, 11.4], stddev["OH"]],             # mean temp an average of 3  
+                      "LO": [[0, 80, 0, 9.85], stddev["LO"]],
+                      }
+            
+
+            #name and mean temp
+            chain1={"LO":points["LO"][0][3], "OH":points["OH"][0][3], "EC":points["EC"][0][3], "C3":points["C3"][0][3], "C2":points["C2"][0][3], "C1":points["C1"][0][3]}
+            chain2={"LO":points["LO"][0][3], "OH":points["OH"][0][3], "EB":points["EB"][0][3]}
+            chain3={"LO":points["LO"][0][3], "OH":points["OH"][0][3], "EA":points["EB"][0][3]}
+            chains=[chain1, chain2, chain3]
+            
             #Temperature.Temperature.Dt_Tres_H_depth([1, 10], 100, [1,10], 100, [10,350], 3,\
-            Temperature.Temperature.Dt_Tres_H_depth([1, 10], 100, [1,10], 100, [150, 500], 1,\
+            Temperature.Temperature.DTemp_Model_vs_Meas([0, 10], 100, [0,10], 100, [150, 500], 1,\
                                                      xlabel = "Residence time [days]", \
                                                      ylabel = "Depth [m]",  \
                                                      cblabel = "$\Delta$T [$^\circ$C]",\
                                                      points = points, \
-                                                     fontsize = 20)
+                                                     lake = {"LO": [0, 80, 0, 9.85]}, \
+                                                     range_x =range_x, range_y=range_y,\
+                                                     fontsize = 20,  chains = chains, exclusions =["LO", "EB"]  )
             break
         
+        if ("stddev_T"):
+            filenames=["Cell_1A.csv","Cell2.csv","Cell3.csv","Stn14.csv","Stn13.csv", "EmbC.csv", "Stn20.csv", "LO_10_2393006.csv"]
+            
+            tinterv = ["13/06/01 00:00:00","13/09/01 00:00:00"]
+            temp = Temperature.Temperature(paths[7], filenames, 3, tinterv = tinterv)
+            stddev = temp.stddev()
+            i=0
+            for f in filenames:
+                print ("Fname:%s, minSD:%f, maxSD:%f" % (f, stddev[i][0],stddev[i][1]))
+                i+=1 
+            break
         if case():  # default, could also just omit condition or 'if True'
             
             print ("something else!")
             # No need to break here, it'll stop anyway
 
-    print "Done!"
+    print("Done!")

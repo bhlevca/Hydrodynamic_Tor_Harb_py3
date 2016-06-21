@@ -19,9 +19,11 @@ import utools.display_data as display_data
 import ufft.smooth as smooth
 import utools.readTempHoboFiles as readTempHoboFiles
 
-import datetime,math
+import datetime, math
 import matplotlib.dates as dates
 import numpy, scipy
+import Water_Level
+import utools.interpolate_data
 
 class Hydrodynamic(object):
     '''
@@ -166,7 +168,7 @@ class Hydrodynamic(object):
             self.goodbins=self.adcp.goodbins
            
         finally:
-            print('Read took %.03f sec.' % t.interval)
+            print(('Read took %.03f sec.' % t.interval))
     
     @staticmethod
     def eddy_viscosity(V, W, dz, deltav = False):
@@ -208,7 +210,8 @@ class Hydrodynamic(object):
                 Kv.append(covariance/grad[k])
         return Kv
 
-    def select_data_dates(self, smooth = False, dateint = None, velprofile = False, savetofile = False):
+    def select_data_dates(self, smooth = False, dateint = None, velprofile = False, savetofile = False, \
+                          delft3d=False, d3d_int=3):
 
         if dateint == None:
             date = self.date 
@@ -216,7 +219,7 @@ class Hydrodynamic(object):
             date = dateint
             
         if date == None:
-            print "No selection is possible 'date' is none"
+            print("No selection is possible 'date' is none")
             self.results_u = self.adcp.east_vel
             self.results_v = self.adcp.north_vel
             self.results_z = self.adcp.vert_vel
@@ -230,13 +233,22 @@ class Hydrodynamic(object):
         dt = datetime.datetime.strptime(date[1], "%y/%m/%d %H:%M:%S")
         end_num = dates.date2num(dt)
 
-        time1, evel = plot_ADCP_velocity.select_dates(start_num, end_num, self.adcp.mtime[0, :], self.adcp.east_vel)
-        time2, nvel = plot_ADCP_velocity.select_dates(start_num, end_num, self.adcp.mtime[0, :], self.adcp.north_vel)
-        time3, zvel = plot_ADCP_velocity.select_dates(start_num, end_num, self.adcp.mtime[0, :], self.adcp.vert_vel)
+        if self.adcp is not None:
+            time1, evel = plot_ADCP_velocity.select_dates(start_num, end_num, self.adcp.mtime[0, :], self.adcp.east_vel)
+            time2, nvel = plot_ADCP_velocity.select_dates(start_num, end_num, self.adcp.mtime[0, :], self.adcp.north_vel)
+            time3, zvel = plot_ADCP_velocity.select_dates(start_num, end_num, self.adcp.mtime[0, :], self.adcp.vert_vel)
+        else:
+            time1, evel = plot_ADCP_velocity.select_dates(start_num, end_num, self.time[0, :], self.results_u)
+            time2, nvel = plot_ADCP_velocity.select_dates(start_num, end_num, self.time[0, :], self.results_v)
+            time3, zvel = plot_ADCP_velocity.select_dates(start_num, end_num, self.time[0, :], self.results_z)
 
         evel = numpy.array(evel)
         nvel = numpy.array(nvel)
         zvel = numpy.array(zvel)
+        time1 = numpy.array(time1)
+        time2 = numpy.array(time2)
+        time3 = numpy.array(time3)
+        
         evel[numpy.isnan(evel)] = 0  # set to zero NAN values
         evel[numpy.isinf(evel)] = 0  # set to 0 infinite values
         nvel[numpy.isnan(nvel)] = 0  # set to zero NAN values
@@ -244,7 +256,40 @@ class Hydrodynamic(object):
         zvel[numpy.isnan(zvel)] = 0  # set to zero NAN values
         zvel[numpy.isinf(zvel)] = 0  # set to 0 infinite values
 
-        if savetofile:
+        if savetofile or delft3d:
+            if delft3d:
+                #for tm in time1:
+                #dtime = datetime.datetime.strptime(tm, "%y/%m/%d %H:%M:%S")
+                #st_strg = dtime.strftime("%y%m%d")
+                dt0 = (time1[0][2] - time1[0][1])             #days
+                d3d_int_days = d3d_int/24./60.                #convert into days
+                print("dt0=%f" % dt0)
+                if abs(d3d_int_days - dt0) > 1e-5: 
+                    ratio = (time1[0][2]-time1[0][1]) / d3d_int_days
+                    newlen = round(ratio* len(time1[0])) 
+                    rtime1 = numpy.zeros((len(time1),newlen), dtype = numpy.float)
+                    rtime2 = numpy.zeros((len(time1),newlen), dtype = numpy.float)
+                    rtime3 = numpy.zeros((len(time1),newlen), dtype = numpy.float)
+                    r_evel = numpy.zeros((len(time1),newlen), dtype = numpy.float)
+                    r_nvel = numpy.zeros((len(time1),newlen), dtype = numpy.float)
+                    r_uvel = numpy.zeros((len(time1),newlen), dtype = numpy.float)
+                    for bin in range(0, len(time1)):
+                        [r_evel[bin],rtime1[bin]] = utools.interpolate_data.interpolateData(d3d_int_days, evel[bin], time1[bin])
+                        [r_nvel[bin],rtime2[bin]] = utools.interpolate_data.interpolateData(d3d_int_days, nvel[bin], time2[bin])
+                        [r_uvel[bin],rtime3[bin]] = utools.interpolate_data.interpolateData(d3d_int_days, zvel[bin], time3[bin])
+                else:
+                    r_evel = evel
+                    r_nvel = nvel
+                    r_uvel = zvel
+                    rtime1 = time1
+                    rtime2 = time2
+                    rtime3 = time3
+                        
+                writebins.writeBins(rtime1, r_evel, self.path, "Cell3-Aug2013-eastVel.tim", delft3d)
+                writebins.writeBins(rtime2, r_nvel, self.path, "Cell3-Aug2013-northVel.tim", delft3d)
+                writebins.writeBins(rtime3, r_uvel, self.path, "Cell3-Aug2013-vertVel.tim", delft3d)    
+            #endif
+            
             writebins.writeBins(time1, evel, self.path, "eastVel.csv")
             writebins.writeBins(time2, nvel, self.path, "northVel.csv")
             writebins.writeBins(time3, zvel, self.path, "vertVel.csv")
@@ -345,15 +390,15 @@ class Hydrodynamic(object):
                 res_u = scipy.ndimage.interpolation.zoom(evel[bin], float(len(TH_dateTimeArr[tlogno])) / float(len(time1[bin])))
                 res_v = scipy.ndimage.interpolation.zoom(nvel[bin], float(len(TH_dateTimeArr[tlogno])) / float(len(time1[bin])))
 
-                print "plot vel wavelet"
+                print("plot vel wavelet")
                 plot_ADCP_vel_FFT.plot_velocity_wavelet_spectrum(res_time1, res_u, scaleunit = scaleunit)
 
-                print "plot temp wavelet"
+                print("plot temp wavelet")
                 plot_ADCP_vel_FFT.plot_velocity_wavelet_spectrum(TH_dateTimeArr[tlogno][1:], TH_resultsArr[tlogno][1:], scaleunit = scaleunit)
 
-                print "plot cross wavelet"
+                print("plot cross wavelet")
         else:
-            print "plot cross wavelet"
+            print("plot cross wavelet")
             plot_ADCP_vel_FFT.plot_cross_spectogram_w_T(time1[bin], results_u[bin], results_v[bin], TH_dateTimeArr[tlogno], TH_resultsArr[tlogno], scaleunit = scaleunit)
         # endif
 
@@ -402,7 +447,7 @@ class Hydrodynamic(object):
             ci = None
         fftGraphs.plotSingleSideSpectrumFreqMultiple(lake_name, names, data, freq, ci, type, \
                                                              self.num_segments, funits, y_label = ylabel, title = None, \
-                                                             log = log, fontsize = 24, tunits = tunits)
+                                                             log = log, fontsize = 20, tunits = tunits)
 
 
     def plot_Temp_FFT(self, locname, smooth = False, tunits = "day", funits = "Hz", \
@@ -446,20 +491,20 @@ class Hydrodynamic(object):
             
         fftGraphs.plotSingleSideSpectrumFreqMultiple(lake_name, [names], [data], freq, ci, type, \
                                                              self.num_segments, funits, y_label = ylabel, title = None, \
-                                                             log = log, fontsize = 24, tunits = tunits)
+                                                             log = log, fontsize = 20, tunits = tunits)
         
     def rotation_transform(self, tet, clockwise=False, u=None, v=None):
         if self.results_u is not None and u is None:
             return plot_ADCP_velocity.rotation_transform(self.results_u, self.results_v, tet, clockwise=clockwise)
         elif u is not None:
             return plot_ADCP_velocity.rotation_transform(u, v, tet, clockwise=clockwise)
-        print 'Velocity values not read!'
+        print('Velocity values not read!')
         raise Exception("Velocity values not read!")
 
     @staticmethod
     def resample(time, up, dt, bin):
         dt0 = (time[0][2] - time[0][1])
-        print "dt0=%f" % dt0
+        print("dt0=%f" % dt0)
         winlen = int(dt / dt0)
         #y, dy = smooth.smooth(up[bin], winlen)
         y = up[bin]
@@ -470,7 +515,7 @@ class Hydrodynamic(object):
     @staticmethod
     def mov_average(time, up, dt, bin):
         dt0 = (time[0][2] - time[0][1])
-        print "dt0=%f" % dt0
+        print("dt0=%f" % dt0)
         window = int(dt / dt0)
         weigths = numpy.repeat(1.0, window)/window
         #including valid will REQUIRE there to be enough datapoints.
@@ -521,14 +566,33 @@ class Hydrodynamic(object):
         estimate the velofity at a 
         @param y: distance form bottom when
         @param ua : konw velocity ar
-        @param a: known distance abouve the bottom
+        @param a: known distance above the bottom
         
         '''
         u = ua * (y/a)**(1/1.2)
         return u
     
     @staticmethod
-    def writeVeltoCSV(fname, data, append =False):
+    def writeVeltoCSV(fname, data, append =False, delft3d=False):
+        if delft3d:
+            dtime = datetime.datetime.strptime(self.date[0], "%y/%m/%d %H:%M:%S")
+            st_strg = dtime.strftime("%y%m%d")
+            [dates, depths] = self.read_press_corr_file(path, fn)
+            
+            dt0 = (dates[2] - dates[1])           #days
+            print("dt0=%f" % dt0)
+            dt = step_min/24./60.                 #convert into days
+            winlen = int(dt / dt0)
+            if not isinstance(depths, np.ndarray):
+                depths = np.array(depths)
+                dates = np.array(dates)
+    
+            weigths = np.repeat(1.0, winlen)/winlen
+            #including valid will REQUIRE there to be enough datapoints.
+            #for example, if you take out valid, it will start @ point one,
+            #not having any prior points, so itll be 1+0+0 = 1 /3 = .3333
+            rdepths = np.convolve(depths, weigths, 'valid')
+            rtime = sp.ndimage.interpolation.zoom(dates, float(dt0 / dt))
         plot_ADCP_velocity.writeVeltoCSV(fname, data, append)
     
     @staticmethod    
