@@ -11,6 +11,7 @@ import Hydrodynamic
 from fastcluster import average
 import os, utools, locale
 import matplotlib.dates as dates
+import matplotlib.mathtext
 from datetime import datetime
 
 windows = ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']
@@ -212,7 +213,7 @@ def WL_FFT_analysis_all():
             wla.plotWaveletScalogram(dates, depths, tunits, title = title)
 
 def WL_FFT_pairs(dateinterval=None):
-    num_segments = 3#10
+    num_segments = 3
     filenames = {'Emb A':'10279443_corr.csv',
                  'Emb B':'1115681_corr.csv',
                  'Emb C':'10238147_corr.csv',
@@ -241,39 +242,40 @@ def WL_FFT_pairs(dateinterval=None):
                  'IH model':'Model-HWL-Spadina-T=3.2h_out.csv',
                  'OH model': 'Model-HWL-TC4-T=3.2h_out.csv'}
                  
-    #filenames = {'Out Harb':'10279444_corr.csv','Inn Harb':'13320-01-MAY-30-NOV-2013_short.csv'}
-    filenames = {'TC4':'01-13-Aug-Water_level_TC4_out.csv','Spadina':'01-13-Aug-Water_level_Spadina_out.csv'}
+    filenames = {'Out Harb':'10279444_corr.csv','Inn Harb':'13320-01-MAY-30-NOV-2013_short.csv'}
+    #filenames = {'TC4':'01-13-Aug-Water_level_TC4_out.csv','Spadina':'01-13-Aug-Water_level_Spadina_out.csv'}
     #Original output with input from Spadina real data
     #filenames = {'IH model':'01-13-Aug-WL-Spadina_out.csv','IH data':'13320-01-AUG-13-AUG-2013.csv'}
-    filenames = {'IH data':'13320-01-AUG-13-AUG-2013.csv', 'IH model':'01-13-Aug-WL-Spadina_out.csv'}
+    #filenames = {'IH data':'13320-01-AUG-13-AUG-2013.csv', 'IH model':'01-13-Aug-WL-Spadina_out.csv'}
     #Output with input from Spadina real data divided by 3 +shift 36 min
     #filenames = {'IH data':'13320-01-AUG-13-AUG-2013.csv', 'IH model':'01-13-Aug-Water_level_Spadina_out.csv'}
     #filenames = {'IH data':'13320-01-AUG-13-AUG-2013.csv', 'IH model':'Model-Spadina-Water level-2Aug2013_out.csv'}
     #Output with input from Spadina real data divided by 3 and increased Manning friction (double to 0.046)  +shift 36 min
     #filenames = {'IH data':'13320-01-AUG-13-AUG-2013.csv', 'IH model':'Model-Spadina-Water level-2Aug2013_out-fric0.046.csv'}
     #Output with input from Spadina real data divided by 7 and increased Manning friction (double to 0.035)  +shift 36 min
-    filenames = {'IH data':'13320-01-AUG-13-AUG-2013.csv', 'IH model':'Model-Spadina-Water level-2Aug2013_out_X7.csv'}
-    filenames = {'IH model T=5h':'Model-HWL-Spadina-T=5h_out.csv', 'OH model T=5h':'Model-HWL-TC4-T=5h_out.csv'}
-    filenames = {'IH model T=1h':'Model-HWL-Spadina-T=1h_out.csv', 'OH model T=1h':'Model-HWL-TC4-T=1h_out.csv'}
-    filenames = {'IH model':'Model-WL-Spadina-5-7Aug_out.csv', 'IH data':'Spadina-AUG-2013.csv'}
-    filenames = {'OH model':'Model-WL-TC4-5-7Aug_out.csv', 'OH data':'St18_corr.csv'}
-    filenames = {'IH model T=3.2h':'Model-HWL-Spadina-T=3.2h_out.csv', 'OH model T=3.2h': 'Model-HWL-TC4-T=3.2h_out.csv'}
+    #filenames = {'IH data':'13320-01-AUG-13-AUG-2013.csv', 'IH model':'Model-Spadina-Water level-2Aug2013_out_X7.csv'}
+    #filenames = {'IH model T=5h':'Model-HWL-Spadina-T=5h_out.csv', 'OH model T=5h':'Model-HWL-TC4-T=5h_out.csv'}
+    #filenames = {'IH model T=1h':'Model-HWL-Spadina-T=1h_out.csv', 'OH model T=1h':'Model-HWL-TC4-T=1h_out.csv'}
+    #filenames = {'IH model':'Model-WL-Spadina-5-7Aug_out.csv', 'IH data':'Spadina-AUG-2013.csv'}
+    #filenames = {'OH model':'Model-WL-TC4-5-7Aug_out.csv', 'OH data':'St18_corr.csv'}
+    #filenames = {'IH model T=3.2h':'Model-HWL-Spadina-T=3.2h_out.csv', 'OH model T=3.2h': 'Model-HWL-TC4-T=3.2h_out.csv'}
     #filenames = {'IH model T=1.7h':'Model-HWL-Spadina-T=1.7h_out.csv', 'OH model T=1.7h': 'Model-HWL-TC4-T=1.7h_out.csv'}
     #filenames = {'IH model T=0.33h':'Model-HWL-Spadina-T=0.33h_out.csv', 'OH model T=0.33h': 'Model-HWL-TC4-T=0.33h_out.csv'}
     #filenames = {'IH model T=1.0h':'Model-HWL-Spadina-T=1.0h_out.csv', 'OH model T=1.0h': 'Model-HWL-TC4-T=1.0h_out.csv'}
     
     #filenames = {'Emb C':'EmbC-cross_section_discharge-7-9Aug_out.csv','E Gap':'EG-cross_section_discharge-7-9Aug_out.csv'}
-    #path_no=1
+    path_no=1
     #path_no=9
-    path_no=8
+    #path_no=8
     for key, value in filenames.items():
         
-        #names = ['Out Harb', key]
+        names = ['Out Harb', key]
+        fnames = [filenames['Out Harb'], filenames['Inn Harb']]
         #fnames = [filenames['IH model'], value]
         #fnames = [filenames['OH model'], filenames['OH data']]
         #fnames = [filenames['Emb C'], filenames['E Gap']]
         #fnames = [filenames['IH model T=5h'], filenames['OH model T=5h']]
-        fnames = [filenames['IH model T=3.2h'], filenames['OH model T=3.2h']]
+        #fnames = [filenames['IH model T=3.2h'], filenames['OH model T=3.2h']]
         #fnames = [filenames['IH model T=1.7h'], filenames['OH model T=1.7h']]
         #fnames = [filenames['IH model T=0.33h'], filenames['OH model T=0.33h']]
         #fnames = [filenames['IH model T=1.0h'], filenames['OH model T=1.0h']]
@@ -282,7 +284,7 @@ def WL_FFT_pairs(dateinterval=None):
         #names = ['IH model T=5h', 'OH model T=5h']
         #names = ['Emb C', 'E GAp']
         #names = ['OH model', 'OH data']
-        names = ['IH model T=3.2h', 'OH model T=3.2h']
+        #names = ['IH model T=3.2h', 'OH model T=3.2h']
         #names = ['IH model T=1.7h', 'OH model T=1.7h']
         #names = ['IH model T=0.33h', 'OH model T=0.33h']
         #names = ['IH model T=1.0h', 'OH model T=1.0h']
@@ -676,7 +678,10 @@ def Avg_Vel_profiles(date, adptype = 'Cell3', firstbin=1, interval =1,\
       (-) in coming out of the bay into Outer harbour 
     
     '''
-     #angles_from_N = {'OH':37, 'EmbC':127,'Cell3':137}    # for clockwise
+    matplotlib.mathtext.SHRINK_FACTOR = 0.9
+
+
+    # angles_from_N = {'OH':37, 'EmbC':127,'Cell3':137}    # for clockwise
                                                           # + sign is into Cell3   and to Cherry beach
     angles_from_N = {'OH':143, 'EmbC':53,'Cell3':43}      # for counter clockwise  and vp the along dir
                                                           #+ direction is TO outer harbour and to Lake Ontario 
@@ -837,14 +842,18 @@ def Avg_Vel_profiles(date, adptype = 'Cell3', firstbin=1, interval =1,\
         limits = None
             
         
-        utools.display_data.display_mixed_subplot(dateTimes1 = [], data = [], varnames = [], ylabels1 = [], \
-                                           dateTimes2 = [], groups = [], groupnames = [], ylabels2 = [], \
-                                           dateTimes3 = dateTimes3, imgs = imgs, ylabels3 = ylabels3, ticks = tick, maxdepths = maxdepth, \
-                                            mindepths = mindepths, mintemps = mintemps, firstlogs = firstlogdepth, maxtemps = maxtemp, \
-                              fnames = None, revert = True, custom = None, maxdepth = None, tick = None, firstlog = None, yday = True, \
-                              title = False, grid = False, limits = limits, sharex = True, fontsize = 18, group_first = False, interp = 2,\
-                              cblabel =  ["$V_{alg}$ [$m s^{-1}$]", "$V_{crs}$ [$m s^{-1}$]","$dV/dz$ [$s^{-1}$]"])
-        
+        utools.display_data.display_mixed_subplot(dateTimes1=[], data=[], varnames=[], ylabels1=[],
+                                           dateTimes2=[], groups=[], groupnames=[], ylabels2=[],
+                                           dateTimes3=dateTimes3, imgs=imgs, ylabels3=ylabels3, ticks=tick,
+                                           maxdepths=maxdepth, mindepths=mindepths, mintemps=mintemps,
+                                           firstlogs=firstlogdepth, maxtemps=maxtemp,
+                                           fnames=None, revert=True, custom=None, maxdepth=None, tick=None,
+                                           firstlog=None, yday=True, title=False, grid=False, limits=limits,
+                                           sharex=True, fontsize=18, group_first=False, interp=2,
+                                           cblabel=[r'$\mathsf{U_{alg}}$ [$\mathsf{m\ s^{-1}}$]',
+                                                    r'$\mathsf{V_{crs}}$ [$\mathsf{m\ s^{-1}}$]',
+                                                    r'$\mathsf{dV\ dz^{-1}}$ [$\mathsf{s^{-1}}$]'])
+
     if ADCPprof:
         # 3) Mixed water, air ,img data
         # ToDO: Add short and long radiation
@@ -962,26 +971,25 @@ def plot_FFT_V_T_WL(adptype, date, scale = 'log', drawslope = False, resample = 
     
     
     
-def subpl_wl_dz_vel(date, adptype, resampled = False, hourgrid = False, doy = False, img=False, cbrange=[-1,1], wl = True):
+def subpl_wl_dz_vel(date, adptype, resampled=False, hourgrid=False, doy=False, img=False, cbrange=[-1,1],
+                    wl=True, plot_interval=1./6):
     '''
     Creates a 3 layer subplot with:
         1) water levels
-        2) Dz/Dt
+        2) Dz/Dt'
         3) Velocities
     '''
-    
+    matplotlib.mathtext.SHRINK_FACTOR = 0.9
     # 1 Get velocities
-     #angles_from_N = {'OH':37, 'EmbC':127,'Cell3':137}    # for clockwise
+    # angles_from_N = {'OH':37, 'EmbC':127,'Cell3':137}   # for clockwise
                                                           # + sign is into Cell3   and to Cherry beach
     angles_from_N = {'OH':143, 'EmbC':53,'Cell3':43}      # for counter clockwise  
-                                                          #+ direction is TO outer harbour and to Lake Ontario 
+                                                          # + direction is TO outer harbour and to Lake Ontario
     bins = {'OH':[0,2,4], 'EmbC':[0,2,3],'Cell3':[0,2,3]}
     maxdepth = {'OH':6.5, 'EmbC':5.0,'Cell3':4.5}
     
     num_segments = 10
-    
-    factor = 6.  # 10 minutes  in days
-    #factor = 1.  # 1 hour in days
+    factor = 1. / plot_interval  #  10 minutes  in days if plot_interval=1/6
     dt = 1. / 24. / factor
 
     hyd = get_Velocities(adptype, date, num_segments)
@@ -993,7 +1001,7 @@ def subpl_wl_dz_vel(date, adptype, resampled = False, hourgrid = False, doy = Fa
 
     rvp = []
     if img:
-        #imgs do not resample
+        # imgs do not resample
         if adptype == "OH":
             vp = vp[:-3].tolist()
         elif adptype == "EmbC":
@@ -1026,7 +1034,7 @@ def subpl_wl_dz_vel(date, adptype, resampled = False, hourgrid = False, doy = Fa
     # 2 get Dz
     daterange = [date[0], date[-1]]
     wla, rtime, rdepths, rdzdt, dates, depths, dzdt = get_Dz_Dt(adptype, paths[1], num_segments, daterange, dt)
-    #add one more to dzdt since is intepolated between nodes and prfiles are on nodes.
+    # add one more to dzdt since is intepolated between nodes and prfiles are on nodes.
     
     legend = []
     if wl:
@@ -1038,31 +1046,39 @@ def subpl_wl_dz_vel(date, adptype, resampled = False, hourgrid = False, doy = Fa
         bin_legend.append(text)
     legend.append(bin_legend)  
     
+
+    # let's do some calculations since the dz/dt will be siplayed in m/h and the information is in m/day
+    # and dt0 between 2 consecutive read values in 3 minutes in thi case but shoudl be made generic since
+    # we have in dt in days. Therefore we need to divide dz/dt by 24 h
+
     dataarr = []
     if resampled:
         if wl:
             dataarr.append(rdepths[:-10])
-        dataarr.append(rdzdt[:-10])
+        dataarr.append(numpy.array(rdzdt[:-10]) / 24)
         dataarr.append(rvp)
         date = rtime[:-10]
         dateImg = rvtime
-    else:   
-        if wl: 
+    else:
+        if wl:
             dataarr.append(depths[:-1])
-        dataarr.append(dzdt[:-1])
+
+        dataarr.append(numpy.array(dzdt[:-1]) / 24)
         dataarr.append(rvp)
         date = dates[:-1]
         if type(hyd.time[0]) is list:
             dateImg = hyd.time[0]
         else:
             dateImg = hyd.time[0].tolist()
-    #labels = ['Z [$m$]', 'dz/dt [$m$]','velocity [$m s^{-1}$]']
+    # labels = ['Z [$m$]', 'dz/dt [$m$]','velocity [$m s^{-1}$]']
+
     if wl:
-        labels = ['Z [$m$]', 'dz/dt [$m$]','depth [$m$]']
+        labels = [r'$\mathsf{Z\ [m]}$', r'$\mathsf{dZ\ dt^{-1}\ [m\ h^{-1}}$]','Depth [m]']
     else:
-        labels = ["dz dt$^{-1}$ [m h$^{-1}$]","depth [$m$]"]
+        labels = [r'$\mathsf{dZ\ dt^{-1} [m\ h^{-1}}$]',"Depth [m]"]
     
-    hyd.display_subplots(date, dateImg, dataarr, dnames = labels, yday = doy, tick = None, legend = legend, hourgrid = hourgrid, img=img, cbrange=cbrange, maxdepth = maxdepth[adptype])
+    hyd.display_subplots(date, dateImg, dataarr, dnames=labels, yday=doy, tick=None, legend=legend,
+                         hourgrid=hourgrid, img=img, cbrange=cbrange, maxdepth=maxdepth[adptype])
 
 def calc_velocities(adptype, date, avg=True, interv = 1, resampled =False, delft3d=False):
     '''
@@ -1454,7 +1470,7 @@ def subplot_lake_harbour(str_date, date, adptype, just_lake=False):
     
         
         # 3) Mixed water, air ,img data
-        custom = numpy.array([r'Wind spd [$\mathsf{km\cdot h^{-1}}$]', 'Air [T($^\circ$C]', 'Water T[$^\circ$C]', ])
+        custom = numpy.array([r'Wind spd [$\mathsf{km\ h^{-1}}$]', 'Air [T($^\circ$C]', 'Water T[$^\circ$C]', ])
         # ToDO: Add short and long radiation
         print("Start display mixed subplots ")
         
@@ -1499,8 +1515,18 @@ def subplot_lake_harbour(str_date, date, adptype, just_lake=False):
 
 
 def subplot_Dz_ADCP_T_harbour(str_date, date, adptype, one_V = False):
+    '''
+
+    :param str_date:
+    :param date:
+    :param adptype:
+    :param one_V:
+    :return:
+    '''
+
     resampled =False
     locale.setlocale(locale.LC_TIME, 'en_US.UTF-8')
+    matplotlib.mathtext.SHRINK_FACTOR = 0.9
 
     water_path = '/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Hobo-Apr-Nov-2013/TC-LakeOntario/csv_processed'
     harbour_path = '/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Hobo-Apr-Nov-2013/AllHarbour/csv_processed/EGap-JarvisDock'
@@ -1754,10 +1780,13 @@ def subplot_Dz_ADCP_T_harbour(str_date, date, adptype, one_V = False):
         
         #limits = [None, None, [-1, 10], None, None ] <= this datesscrews up the tickers 
         limits = None
-        clabel = ["$V_{alg}$ [$m s^{-1}$]", "$V_{crs}$ [$m s^{-1}$]","$dV/dz$ [$s^{-1}$]","Temp [$\circ$ C]"]
+        clabel = [r'$\mathsf{U_{alg}}$ [$\mathsf{m\ s^{-1}}$]',
+                   r'$\mathsf{V_{crs}}$ [$\mathsf{m\ s^{-1}}$]',
+                   r'$\mathsf{dV\ dz^{-1}}$ [$\mathsf{s^{-1}}$]',
+                   r'$\mathsf{T_{water}}$ [$^\circ$C]']
     
     
-    utools.display_data.display_mixed_subplot(dateTimes1 = [rtime[:-1]], data = [rdzdt[:-1]], varnames = [], ylabels1 = ["dz dt$^{-1}$ [m h$^{-1}$]"], limits1 = limits1, \
+    utools.display_data.display_mixed_subplot(dateTimes1 = [rtime[:-1]], data = [rdzdt[:-1]], varnames = [], ylabels1 = [r"dZ dt$^{-1}$ [$\mathsf{m\ h^{-1}}$]"], limits1 = limits1, \
                                               dateTimes2 = [], groups = [], groupnames = [], ylabels2 = [], \
                                               dateTimes3 = dateTimes3, imgs = imgs, ylabels3 = ylabels3, ticks = tick, maxdepths = maxdepth, \
                                               mindepths = mindepths, mintemps = mintemps, firstlogs = firstlogdepth, maxtemps = maxtemp, \
@@ -1786,14 +1815,14 @@ if __name__ == '__main__':
     
     v = 'tobermory'  # for doing the XCT analysis on FFNMP data
     v = 'hodographs'
-    v = 'windrose_vel'
+    #v = 'windrose_vel'
     #v = 'dz_dt'
     v = 'subpl_wl_dz_vel'
     #v = 'vel-profiles'
     #v = 'wl_fft_all'
     #v = 'vel_fft_pairs'
     #v = 'temp_fft'
-    v = 'wl_fft_pairs'
+    #v = 'wl_fft_pairs'
     #v = 'plot_fft_v_T_wl'
     #v = 'calc_vel_flush'
     #v = 'calc_vel_flush_dh' 
@@ -1804,7 +1833,7 @@ if __name__ == '__main__':
     #v = 'subplot_Dz_ADCP_T_harbour'
     #v = "wct_v_t"
     #v = 'avg-vel-profiles'
-    #v = "dt_meas_calc"
+    #v = "dT_meas_calc"
     #v = 'calc_delft3d_vel'
     # v = "stddev_T"
     # map the inputs to the function blocks
@@ -1821,7 +1850,7 @@ if __name__ == '__main__':
             WL_FFT_pairs(dateinterval=dates)
             break
         if case('vel_fft_pairs'):
-            Vel_FFT_pairs(date, skipRDI= True)
+            Vel_FFT_pairs(date, skipRDI=True)
             break
         if case('temp_fft'):
             Temp_FFT(date, skipRDI=True)
@@ -1935,14 +1964,16 @@ if __name__ == '__main__':
             date = ['13/07/18 00:00:00', '13/07/30 00:00:00']    # shows enough of storm and quiet
             date = ['13/07/24 00:00:00', '13/07/24 23:00:00']    # one day shows hourly alternation in DZ
             #date = ['13/07/19 23:00:00', '13/07/21 13:00:00']    # stormy period
-            resampled = False
+            resampled = True
             hourgrid = True
             DOY = False
             img=True
             location = "EmbC"
             location = "Cell3"
-            wl = False
-            subpl_wl_dz_vel(date, location, resampled, hourgrid, doy = DOY, img=img, cbrange=[-0.4,0.4], wl = wl)
+            wl = True
+            plot_int = 1./6. # in hours -> 1/6 =10 minutes
+            subpl_wl_dz_vel(date, location, resampled, hourgrid, doy = DOY, img=img, cbrange=[-0.4,0.4],
+                            wl=wl, plot_interval=plot_int)
             break
         if case ('plot_fft_v_T_wl'):
             date = ['13/06/25 00:00:00', '13/08/16 00:00:00']    # TOO LONG
@@ -2030,7 +2061,7 @@ if __name__ == '__main__':
             end_num = dates.date2num(dt)
             adptype = "Cell3"
             #adptype = "OH"
-            one_V = True
+            one_V = False
             subplot_Dz_ADCP_T_harbour(date, [start_num, end_num], adptype, one_V)
             break
         
@@ -2040,7 +2071,7 @@ if __name__ == '__main__':
             wct_V_T(date, bin, adptype)
             break
       
-        if case("dt_meas_calc"):
+        if case("dT_meas_calc"):
             ''' 
             Station: ea,  mean: 12.364103  max: 16.654000 min: 5.616000
             Station: ohtc3,  mean: 10.264501  max: 17.153000 min: 4.844000
@@ -2074,7 +2105,9 @@ if __name__ == '__main__':
             Cell 3         7.7             6/8.6              7.6/6.2           18.1
             Cell 2         10.4            1.18/5.18           1.6/1.2          20.4
             Cell 1 Shidan  13.2             9.7                 0.6             24.2
-            Emb  A                          1.25                2.6      
+            Emb  A                          1.25                2.6
+            Emb  Ahf                        1.65                2.6
+            Emb  Alf                        1.95                2.6      
             Emb  B                          0.6                 1.19            
             '''
             #stations  = ["OH", "Emb C", "Cell 3", "Cell 2", "Cell 1", "Emb B", "Emb A"]
@@ -2088,7 +2121,9 @@ if __name__ == '__main__':
             stddev = {"C1": 2.693083-1, 
                      "C2": 2.514186-1,
                      "C3": 2.1890-1,
-                     "EA": 3.467984-1,
+                     "EA": 3.467984-1,    
+                     "Ah": 3.467984-1,
+                     "Al": 3.467984-1,
                      "EB": 3.383678-1,
                      "EC": 2.084654-1,
                      "OH": 3.328926-1,
@@ -2099,6 +2134,8 @@ if __name__ == '__main__':
                       "C2": [[2.1, 0.8, 10.4, 20.34], stddev["C2"]],          # res 1.1 ->2.1 
                       "C3": [[6.9,  6.1, 5.9, 15.3], stddev["C3"]],           # res 6 -> 6.9  dept 6.8 -> 6.1 mean deltaT 9->4.5 temp 19->14.5         
                       "EA": [[1.3, 2.6, 2.5, 12.36], stddev["EA"]],
+                      "Ah": [[2.6, 2.6, 2.5, 12.36], stddev["Ah"]],
+                      "Al": [[3.0, 2.6, 2.5, 12.36], stddev["Al"]],
                       "EB": [[0.6, 1.19, 8.6, 18.5], stddev["EB"]],           #
                       "EC": [[2.8, 3.3, 3.0, 12.8], stddev["EC"]],
                       "OH": [[3.2, 8.9, 1.7, 11.4], stddev["OH"]],             # mean temp an average of 3  

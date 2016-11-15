@@ -335,7 +335,8 @@ class Hydrodynamic(object):
         # end if
         if dateint == None:
             self.time = time1
-        self.results_temp =  self.adcp.temperature
+        if self.adcp is not None:
+            self.results_temp =  self.adcp.temperature
    
         if dateint != None:
             return [time1,  tresults_u, tresults_v, tresults_z] 

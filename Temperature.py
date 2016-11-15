@@ -107,15 +107,23 @@ class Temperature(object):
             ax[h].set_yticks(np.arange(min(D), max(D)+1, 2.0))
         
             #set the points and the text
-            ii=0 
+            xmin = 100; ymin = 100
+            for k,v in points.items():
+                xmin = min(v[0][0], xmin)
+                ymin = min(v[0][1], ymin)
+             
+            ii=0
             for k,v in points.items():
                 text = k
                 if text == "LO":
                     continue
                 location = v[0]
-                ax[h].plot(location[0], location[1])
-                 
-                ax[h].annotate(text, xy=(location[0], location[1]), xytext = (location[0], location[1]),\
+                if text == 'Ah' or text == 'Al':
+                    ax[h].plot(location[0], location[1], 'dr')
+                else:
+                    ax[h].plot(location[0], location[1], 'dw')
+                
+                ax[h].annotate(text, xy=(location[0], location[1]), xytext = (location[0] + xmin/5., location[1] + ymin/15.),\
                                color='white', fontsize = fontsize-5)
                 ii+=1
     

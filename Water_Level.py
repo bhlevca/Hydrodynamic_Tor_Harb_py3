@@ -264,7 +264,7 @@ class WaterLevelAnalysis(object):
         lowcut = filter[0]
         highcut = filter[1]
         btype = 'band'
-        y, w, h, b, a = fft.filters.butterworth(SensorDepth, btype, lowcut, highcut, Fs, recurse = True)
+        y, w, h, b, a = ufft.filters.butterworth(SensorDepth, btype, lowcut, highcut, Fs, recurse = True)
         # filter.butterworth(SensorDepth, Fs)
 
         # ToDo:
@@ -469,13 +469,13 @@ class WaterLevelAnalysis(object):
             y, yd = smooth.smooth(depths, winlen)
         else:
             y = depths
-        y = depths
+
         rdepths = sp.ndimage.interpolation.zoom(y, float(dt0 / dt))
         rtime = sp.ndimage.interpolation.zoom(dates, float(dt0 / dt))
-        rdzdt = [(rdepths[j + 1] - rdepths[j]) for j in range(0, len(rdepths) - 1) ]
-        rdzdt.append((rdzdt[-1]+rdzdt[-2])/2)
-        dzdt = [(depths[j + 1] - depths[j]) for j in range(0, len(depths) - 1) ]
-        dzdt.append((dzdt[-1]+dzdt[-2])/2)
+        rdzdt = [(rdepths[j] - rdepths[j + 1]) / dt for j in range(0, len(rdepths) - 1) ]
+        rdzdt.append((rdzdt[-1] + rdzdt[-2])/2)
+        dzdt = [(depths[j] - depths[j + 1]) / dt0 for j in range(0, len(depths) - 1) ]
+        dzdt.append((dzdt[-1] + dzdt[-2])/2)
         
         return rtime, rdepths, rdzdt, dzdt
 
