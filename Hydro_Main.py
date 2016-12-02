@@ -179,7 +179,8 @@ def WL_FFT_analysis_all():
 
         # plot the original Lake oscillation input
         xlabel = 'Time [days]'
-        ylabel = 'Z(t) [m]'
+        # ylabel = 'Z(t) [m]'
+        ylabel = '|Z(f)| [m]'
         ts_legend = [key + ' - water levels [m]']
         wla.plotTimeSeries("Lake levels", xlabel, ylabel, dates, depths, ts_legend)
         # end plot
@@ -198,22 +199,21 @@ def WL_FFT_analysis_all():
         data.append([x95])
         data.append([f])
 
-        y_label = 'Z(t) [m]'
         title = 'Single-Sided Amplitude Spectrum vs freq'
         funits = 'cph'
         logarithmic = 'loglog'
         grid = False
         plottitle = False
         ymax = None  # 0.01
-        wla.plotSingleSideAplitudeSpectrumFreq(data, funits = funits, y_label = y_label, title = title, log = logarithmic, \
-                                            fontsize = 20, tunits = tunits, plottitle = plottitle, grid = grid, \
+        wla.plotSingleSideAplitudeSpectrumFreq(data, funits = funits, y_label = ylabel, title = title, log = logarithmic, \
+                                            fontsize = 18, tunits = tunits, plottitle = plottitle, grid = grid, \
                                             ymax = ymax)
 
         if wav:
             wla.plotWaveletScalogram(dates, depths, tunits, title = title)
 
 def WL_FFT_pairs(dateinterval=None):
-    num_segments = 3
+    num_segments = 10
     filenames = {'Emb A':'10279443_corr.csv',
                  'Emb B':'1115681_corr.csv',
                  'Emb C':'10238147_corr.csv',
@@ -223,8 +223,9 @@ def WL_FFT_pairs(dateinterval=None):
                  'Out Harb':'10279444_corr.csv',
                  'IH data':'13320-01-AUG-13-AUG-2013.csv',
                  'TC4':'01-13-Aug-WL-TC4_out.csv',
+                 'Lake Ontario':'10279444_corr.csv',
+                 # ---------------------------
                  'IH model':'01-13-Aug-Water_level_Spadinapai.csv',
-                 #---------------------------
                  'IH model T=5h':'Model-HWL-Spadina-T=5h_out.csv',
                  'OH model T=5h':'Model-HWL-TC4-T=5h_out.csv',
                  'IH model T=1h':'Model-HWL-Spadina-T=1h_out.csv',
@@ -242,7 +243,8 @@ def WL_FFT_pairs(dateinterval=None):
                  'IH model':'Model-HWL-Spadina-T=3.2h_out.csv',
                  'OH model': 'Model-HWL-TC4-T=3.2h_out.csv'}
                  
-    filenames = {'Out Harb':'10279444_corr.csv','Inn Harb':'13320-01-MAY-30-NOV-2013_short.csv'}
+    filenames = {'Inn Harb':'13320-01-MAY-30-NOV-2013_short.csv', 'Out Harb':'10279444_corr.csv'}
+    #filenames = {'Emb A':'10279443_corr.csv', 'Lake Ontario':'10279444_corr.csv'}
     #filenames = {'TC4':'01-13-Aug-Water_level_TC4_out.csv','Spadina':'01-13-Aug-Water_level_Spadina_out.csv'}
     #Original output with input from Spadina real data
     #filenames = {'IH model':'01-13-Aug-WL-Spadina_out.csv','IH data':'13320-01-AUG-13-AUG-2013.csv'}
@@ -270,7 +272,9 @@ def WL_FFT_pairs(dateinterval=None):
     for key, value in filenames.items():
         
         names = ['Out Harb', key]
-        fnames = [filenames['Out Harb'], filenames['Inn Harb']]
+        fnames = [filenames['Inn Harb'], filenames['Out Harb']]
+        #names = ['Emb A', key]
+        #fnames = [filenames['Emb A'], filenames['Lake Ontario']]
         #fnames = [filenames['IH model'], value]
         #fnames = [filenames['OH model'], filenames['OH data']]
         #fnames = [filenames['Emb C'], filenames['E Gap']]
@@ -288,16 +292,19 @@ def WL_FFT_pairs(dateinterval=None):
         #names = ['IH model T=1.7h', 'OH model T=1.7h']
         #names = ['IH model T=0.33h', 'OH model T=0.33h']
         #names = ['IH model T=1.0h', 'OH model T=1.0h']
-        
+
+        log = 'loglog'
+        #log = False
         wla = Water_Level.WaterLevelAnalysis(paths[path_no], fnames, num_segments)
-        wla.doDualSpectralAnalysis(paths[path_no], fnames, names, b_wavelets = False, window = "hanning", \
-                                   num_segments = num_segments, tunits = 'day', \
-                                   funits = "cph", filter = None, log = 'loglog', doy = True, grid = False, dateinterval=dateinterval, d3d=False)
+        wla.doDualSpectralAnalysis(paths[path_no], fnames, names, b_wavelets=False, window="hanning",
+                                   num_segments=num_segments, tunits = 'day',
+                                   funits="cph", filter=None, log=log, doy=True, grid=False,
+                                   dateinterval=dateinterval, d3d=False)
 
 def Vel_FFT_pairs(date, plotFFT = True, skipRDI = False):
 
     # Process RDI-Teledyne
-    num_segments = 10
+    num_segments = 3
     filenames = {'OH':'600mhz-DPL_002.000',
                  'EmbC':'1200mhz-EMBC_004.000'}
 
@@ -547,7 +554,7 @@ def Vel_hodographs(date, dt, modd):
 
 def Vel_windrose(date, skipRDI = False):
     def calculateVector(results_u, results_v):
-        rad = 4.*math.atan(1.0) / 180.  # degress to radians
+        rad = 4. * math.atan(1.0) / 180.  # degress to radians
         wspd = numpy.sqrt(results_u ** 2 + results_v ** 2)
         wdir = numpy.arctan2(results_v , results_u) / rad  # in degrees
         wdir[ wdir < 0 ] = wdir[ wdir < 0 ] + 360
@@ -1813,16 +1820,16 @@ if __name__ == '__main__':
    
     
     
-    v = 'tobermory'  # for doing the XCT analysis on FFNMP data
-    v = 'hodographs'
+    #v = 'tobermory'  # for doing the XCT analysis on FFNMP data
+    #v = 'hodographs'
     #v = 'windrose_vel'
     #v = 'dz_dt'
-    v = 'subpl_wl_dz_vel'
+    #v = 'subpl_wl_dz_vel'
     #v = 'vel-profiles'
-    #v = 'wl_fft_all'
+    v = 'wl_fft_all'
     #v = 'vel_fft_pairs'
     #v = 'temp_fft'
-    #v = 'wl_fft_pairs'
+    v = 'wl_fft_pairs'
     #v = 'plot_fft_v_T_wl'
     #v = 'calc_vel_flush'
     #v = 'calc_vel_flush_dh' 
@@ -1833,9 +1840,10 @@ if __name__ == '__main__':
     #v = 'subplot_Dz_ADCP_T_harbour'
     #v = "wct_v_t"
     #v = 'avg-vel-profiles'
-    #v = "dT_meas_calc"
+    v = "dT_meas_calc"
     #v = 'calc_delft3d_vel'
     # v = "stddev_T"
+
     # map the inputs to the function blocks
     for case in switch(v):
         if case('wl_fft_all'):
@@ -1846,7 +1854,7 @@ if __name__ == '__main__':
             break
         if case('wl_fft_pairs'):
             dates = ['13/08/03 00:00:00', '13/08/04 00:00:00']
-            #dates = ['13/04/06 00:00:00', '13/04/07 00:00:00'] 
+            dates = ['13/06/06 00:00:00', '13/10/07 00:00:00']
             WL_FFT_pairs(dateinterval=dates)
             break
         if case('vel_fft_pairs'):
@@ -2150,13 +2158,13 @@ if __name__ == '__main__':
             chains=[chain1, chain2, chain3]
             
             #Temperature.Temperature.Dt_Tres_H_depth([1, 10], 100, [1,10], 100, [10,350], 3,\
-            Temperature.Temperature.DTemp_Model_vs_Meas([0, 10], 100, [0,10], 100, [150, 500], 1,\
-                                                     xlabel = "Residence time [days]", \
-                                                     ylabel = "Depth [m]",  \
-                                                     cblabel = "$\Delta$T [$^\circ$C]",\
-                                                     points = points, \
-                                                     lake = {"LO": [0, 80, 0, 9.85]}, \
-                                                     range_x =range_x, range_y=range_y,\
+            Temperature.Temperature.DTemp_Model_vs_Meas([0, 10], 100, [0,10], 100, [150, 500], 1,
+                                                     xlabel="Residence time [days]",
+                                                     ylabel="Depth [m]",
+                                                     cblabel="$\Delta$T [$^\circ$C]",
+                                                     points=points,
+                                                     lake = {"LO": [0, 80, 0, 9.85]},
+                                                     range_x =range_x, range_y=range_y,
                                                      fontsize = 20,  chains = chains, exclusions =["LO", "EB"]  )
             break
         

@@ -173,7 +173,7 @@ class Temperature(object):
                     measTemp_excl = []
                     stddev = []
                 for name, data in points.items():
-                    if name == "LO":
+                    if name == "LO" or name == "EB" or name == "Al" or name == "Ah": # if exclude EB as well
                         continue
                     D = data[0][1]
                     resTime = data[0][0]
@@ -194,9 +194,11 @@ class Temperature(object):
                     [r2, slope, intercept, r_value, p_value, std_err] = stat.rsquared(measTemp_excl, deltaT_excl)
                 else:
                     [r2, slope, intercept, r_value, p_value, std_err] = stat.rsquared(measTemp, deltaT)
-                stat.plot_regression(np.array(measTemp), np.array(deltaT), stddev, slope = slope, intercept = intercept, point_labels = point_labels, \
-                                 x_label = "Measured $\Delta$T [$^\circ$C]", y_label = "Calculated $\Delta$T [$^\circ$C]", \
-                                 r_value = r_value, p_value = p_value, show=True, exclusions = exclusions) #, \
+                stat.plot_regression(np.array(measTemp), np.array(deltaT), stddev, slope = slope, intercept = intercept,
+                                     point_labels = point_labels,
+                                     x_label = "Measured $\Delta$T [$^\circ$C]",
+                                     y_label = "Calculated $\Delta$T [$^\circ$C]",
+                                     r_value = r_value, p_value = p_value, show=True, exclusions = exclusions) #,
                                  #title = "Measured vs. $\Delta$T Calculated Directly")
             
     def getDict(self):

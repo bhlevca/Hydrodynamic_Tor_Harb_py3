@@ -366,10 +366,12 @@ class WaterLevelAnalysis(object):
             legend.append(name_arr[i])
 
         if self.num_segments == 1:
-            fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend = legend, log = log, plottitle = plottitle, ymax_lim = ymax)
+            fft_utils.plot_n_Array(title, xlabel, ylabel, xa, ya, legend = legend, log = log,
+                                   plottitle = plottitle, ymax_lim = ymax)
         else:
-            fft_utils.plot_n_Array_with_CI(title, xlabel, ylabel, xa, ya, ci05, ci95, legend = legend, \
-                                            log = log, fontsize = fontsize, plottitle = plottitle, grid = grid, ymax_lim = ymax)
+            fft_utils.plot_n_Array_with_CI(title, xlabel, ylabel, xa, ya, ci05, ci95, legend = legend,
+                                            log = log, fontsize = fontsize, plottitle = plottitle,
+                                           grid = grid, ymax_lim = ymax)
     # end plotSingleSideAplitudeSpectrumFreq
 
     def plotWaveletScalogram(self, dates, data, tunits, title = None, debug = False):
