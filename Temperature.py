@@ -3,8 +3,8 @@ Created on Nov 20, 2014
 
 @author: bogdan
 '''
-from mpl_toolkits.mplot3d import Axes3D
-from matplotlib import cm
+import os
+import locale
 import matplotlib.pyplot as plt
 import scipy as sp
 import numpy as np
@@ -15,13 +15,19 @@ from datetime import datetime
 import matplotlib.dates as dates
 # local imports
 import ufft.fft_utils as fft_utils
-import wavelets.kCwt
-import ufft.FFTGraphs as FFTGraphs
 import utools.display_data as display_data
 import utools
 import utools.stats as stat
-import ufft.smooth as smooth
 import matplotlib
+
+windows = ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']
+window_6hour = "window_6hour"  # 30 * 6 for a 2 minute sampling
+window_hour = "window_hour"  # 30
+window_day = "window_day"  # 30 * 24
+window_half_day = "window_half_day"  # 30 * 12
+window_3days = "window_3days"  # 3 * 30 * 24
+window_7days = "window_7days"  # 7 * 30 * 24
+
 
 class Temperature(object):
     '''
@@ -565,6 +571,7 @@ class Temperature(object):
         return [f[0], avg_fftx, avg_amplit, avg_power, x05, x95]
     # end
     
+
     def stddev(self):
         out = []
         for fn in self.dict:
@@ -575,4 +582,187 @@ class Temperature(object):
             MaxSD = stddev
             out.append([MinSD,MaxSD])
         return out
-        
+
+
+    ####################################################################################################################
+    @staticmethod
+    def read_temp_harbour_data(str_date, date, harbour_path):
+        '''
+        :param str_date:
+        :param date:
+        :param harbour_path:
+        :return:
+        '''
+
+        locale.setlocale(locale.LC_TIME, 'en_US.UTF-8')
+        print("Start read_temp_harbour_data")
+        start_num = date[0]
+        end_num = date[1]
+
+        i = 0
+        base, dirs, files = next(iter(os.walk(harbour_path)))
+        sorted_files = sorted(files, key=lambda x: x.split('.')[0])
+
+        TH_dateTimeArr = np.zeros(len(sorted_files), dtype=np.ndarray)
+        TH_tempArr = np.zeros(len(sorted_files), dtype=np.ndarray)
+        TH_resultsArr = np.zeros(len(sorted_files), dtype=np.ndarray)
+
+        i = 0
+        for fname in sorted_files:
+            dateTime, temp, results = utools.readTempHoboFiles.get_data_from_file(fname, window_hour, windows[1],
+                                                                                  timeinterv=date,
+                                                                                  rpath=harbour_path)
+            TH_dateTimeArr[i] = np.append(TH_dateTimeArr[i], dateTime[:])
+            TH_resultsArr[i] = np.append(TH_resultsArr[i], results[:])
+            TH_tempArr[i] = np.append(TH_tempArr[i], temp[:])
+            i += 1
+
+        #trim all the arrays to the min size
+        # or check is we need interpolation
+
+        mxs = len(TH_dateTimeArr[0])   # max size
+        mxsp = mxs
+        mxi = 0                        # max ix
+        for i in range(0, len(TH_dateTimeArr)):
+            mxs = max(mxs, len(TH_dateTimeArr[i])) # find max len
+            if mxs != mxsp:
+                mxi = i
+
+        newlen = len(TH_dateTimeArr[mxi])             # this is the length all vectors should have
+
+        for i in range(0, len(TH_dateTimeArr)):
+            if len(TH_dateTimeArr[i] != mxs):              #if len in not max then we need to intepolate
+                dta = np.interp(TH_dateTimeArr[mxi], TH_dateTimeArr[i], TH_dateTimeArr[i])
+                ra = np.interp(TH_dateTimeArr[mxi], TH_dateTimeArr[i], TH_resultsArr[i])
+                ta = np.interp(TH_dateTimeArr[mxi], TH_dateTimeArr[i], TH_tempArr[i])
+                TH_dateTimeArr[i] = dta[:]
+                TH_resultsArr[i] = ra[:]
+                TH_tempArr[i] = ta[:]
+            else:
+                TH_dateTimeArr[i] = TH_dateTimeArr[i][:]
+                TH_resultsArr[i] = TH_resultsArr[i][:]
+                TH_tempArr[i] = TH_tempArr[i][:]
+
+
+        return [TH_dateTimeArr, TH_resultsArr, TH_tempArr]
+
+
+    ################################################################################################################33
+    @staticmethod
+    def subplot_Temp_OH_2015(str_date, date):
+        '''
+        :param str_date:
+        :param date:
+        :return:
+        '''
+
+        resampled = False
+        locale.setlocale(locale.LC_TIME, 'en_US.UTF-8')
+        matplotlib.mathtext.SHRINK_FACTOR = 0.9
+
+        harbour_path = '/home/bogdan/Documents/UofT/PhD/Data_Files/2015/TempChain-Data-2015/csv_processed'
+        loboviz_path = '/home/bogdan/Documents/UofT/PhD/Data_Files/2015/loboviz2-temp/csv_processed'
+        print("Start subplot_Temp_OH_2015")
+        start_num = date[0]
+        end_num = date[1]
+
+
+
+
+        # 1) read all T4
+        interpolate = 3 #from 30 min to 10 interval
+        [LV_dateTimeArr, LV_resultsArr, LV_tempArr] = \
+            Temperature.read_temp_harbour_data(str_date, date, loboviz_path)
+
+        if interpolate is not None:
+            LV_dateTimeInt = np.zeros(len(LV_dateTimeArr), dtype=np.ndarray)
+            LV_resultsInt = np.zeros(len(LV_dateTimeArr), dtype=np.ndarray)
+
+            for i in range(0, len(LV_dateTimeArr)):
+                dateint = np.interp(np.linspace(LV_dateTimeArr[i][1], LV_dateTimeArr[i][len(LV_dateTimeArr[i]) - 1],
+                                                           interpolate * len(LV_dateTimeArr[i])),
+                                            LV_dateTimeArr[i], LV_dateTimeArr[i])
+                tempint = np.interp(np.linspace(LV_dateTimeArr[i][1], LV_dateTimeArr[i][len(LV_dateTimeArr[i]) - 1],
+                                                     interpolate * len(LV_dateTimeArr[i])),
+                                         LV_dateTimeArr[i], LV_resultsArr[i])
+                LV_dateTimeInt[i] = np.append(LV_dateTimeInt[i], dateint)
+                LV_resultsInt[i] = np.append(LV_resultsInt[i], tempint)
+
+            LV_dateTimeArr = LV_dateTimeInt
+            LV_resultsArr = LV_resultsInt
+
+        # 1) read all T4
+        [T4_dateTimeArr, T4_resultsArr, T4_tempArr] = \
+            Temperature.read_temp_harbour_data(str_date, date, harbour_path + '/' + 'T4')
+
+        # 2) read all E_GAP
+        # East Gap  data was compromised after August 26
+        str_date2 = ['15/06/11 12:30:00', '15/08/25 12:30:00']
+        dt = datetime.strptime(str_date2[0], "%y/%m/%d %H:%M:%S")
+        start_num2 = dates.date2num(dt)
+        dt = datetime.strptime(str_date2[1], "%y/%m/%d %H:%M:%S")
+        end_num2 = dates.date2num(dt)
+
+        [EG_dateTimeArr, EG_resultsArr, EG_tempArr] = \
+            Temperature.read_temp_harbour_data(str_date2, [start_num2, end_num2], harbour_path + '/' + 'E_GAP')
+
+        # 4) read all JARVIS
+        [JV_dateTimeArr, JV_resultsArr, JV_tempArr] = \
+            Temperature.read_temp_harbour_data(str_date, date, harbour_path + '/' + 'JARVIS')
+
+        # Time domain analysis
+        lowcut = 1.0 / (24 * 10) / 3600
+        highcut = 1.0 / (24 * 3) / 3600
+        tunits = 'day'
+
+        if tunits == 'day':
+            factor = 86400
+        elif tunits == 'hour':
+            factor = 3600
+        else:
+            factor = 1
+
+
+        dateTimes3 = [LV_dateTimeArr, T4_dateTimeArr, EG_dateTimeArr, JV_dateTimeArr]
+        imgs = [LV_resultsArr[::-1], T4_resultsArr[::-1], EG_resultsArr[::-1], JV_resultsArr[::-1]]
+        ylabels3 = ["Depth [m]", "Depth [m]", "Depth [m]", "Depth [m]"]
+
+        t11 = ['0', '5', '10', '16']
+        t12 = [16, 10, 5, 0]
+
+        t21 = ['0', '2.5', '5', '8']
+        t22 = [8, 5, 2.5, 0]
+
+        t31 = ['0', '2', '4.5', '7']
+        t32 = [7, 4.5, 2, 0]
+
+        t41 = ['0', '3', '6', '9']
+        t42 = [9, 6, 3, 0]
+
+        maxdepth = [16, 8, 7, 9]
+        firstlogdepth = [0, 0, 0, 0]
+        mindepths = [0, 0, 0, 0]
+        maxtemp = [24, 24, 24, 24]
+        mintemps = [0, 0, 0, 0]
+
+
+        tick = [[t11, t12], [t21, t22], [t31, t32] , [t41, t42]]
+
+        # limits = [None, None, [-1, 10], None, None ] <= this datesscrews up the tickers
+        limits = None
+        clabel = [r'$\mathsf{Temp.}$ [$^\circ$C]',
+                  r'$\mathsf{Temp.}$ [$^\circ$C]',
+                  r'$\mathsf{Temp.}$ [$^\circ$C]',
+                  r'$\mathsf{Temp.}$ [$^\circ$C]']
+
+        utools.display_data.display_mixed_subplot(dateTimes1=[], data=[], varnames=[],
+                                                  ylabels1=[], limits1=None,
+                                                  dateTimes2=[], groups=[], groupnames=[], ylabels2=[],
+                                                  dateTimes3=dateTimes3, imgs=imgs, ylabels3=ylabels3,
+                                                  ticks=tick, maxdepths=maxdepth,
+                                                  mindepths=mindepths, mintemps=mintemps, firstlogs=firstlogdepth,
+                                                  maxtemps=maxtemp,
+                                                  fnames=None, revert=True, custom=None, maxdepth=None,
+                                                  tick=None, firstlog=None, yday=True,
+                                                  title=False, grid=False, limits=limits, sharex=True, sharey=False,
+                                                  fontsize=15, group_first=False, interp=3, cblabel=clabel)

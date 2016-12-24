@@ -15,6 +15,7 @@ import matplotlib.dates as dates
 import matplotlib.mathtext
 from datetime import datetime
 import utools
+import resample
 
 
 windows = ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']
@@ -363,7 +364,7 @@ def Temp_FFT(date, plotFFT = True, skipRDI = False):
             hyd.readRawBinADCP()
             # type = 'power'
             if plotFFT:
-                hyd.plot_Temp_FFT(key, bins, tunits = "day", funits = "cph", log = log, grid = False, type = type, withci = True)
+                hyd.plot_Temp_FFT(key, tunits="day", funits="cph", log=log, grid=False, type=type, withci=True)
             else:
                 hyd.select_data_dates()
                 data.append(hyd.getData())
@@ -1348,8 +1349,8 @@ def read_lake_and_harbour_data(str_date, date, water_path, harbour_path, just_la
     return [dateTimeArr, resultsArr, tempArr, [], [], []]
 
 
-#############################################################################
-def convert_tempchain_data_for_lakeStability(harbour_path=None, writepath=None, resample=1./6, timeinterv=None):
+###############################################################################################################
+def convert_tempchain_data_for_lakeStability(harbour_path=None, writepath=None, resmpl=1./24, timeinterv=None):
     # 1') read all harbour data (EG + Jarvis Dock
     base, dirs, files = next(iter(os.walk(harbour_path)))
     sorted_files = sorted(files, key=lambda x: x.split('.')[0])
@@ -1363,26 +1364,25 @@ def convert_tempchain_data_for_lakeStability(harbour_path=None, writepath=None, 
         dateTime, temp, results = utools.readTempHoboFiles.get_data_from_file(fname, window_hour, windows[1],
                                                                               timeinterv=timeinterv, rpath=harbour_path)
         maxidx = 300000
-        TH_dateTimeArr[i] = numpy.append(TH_dateTimeArr[i], dateTime[:maxidx])
-        TH_resultsArr[i] = numpy.append(TH_resultsArr[i], results[:maxidx])
-        TH_tempArr[i] = numpy.append(TH_tempArr[i], temp[:maxidx])
-        TH_k[i] = numpy.append(TH_k[i], i)
+        TH_dateTimeArr[i] = dateTime[:] #numpy.append(TH_dateTimeArr[i], dateTime[:maxidx])
+        TH_resultsArr[i] = results[:]  #numpy.append(TH_resultsArr[i], results[:maxidx])
+        TH_tempArr[i] =  temp[:] #numpy.append(TH_tempArr[i], temp[:maxidx])
+        TH_k[i] = i #numpy.append(TH_k[i], i)
         i += 1
 
     # resample if necessary
-    if resample is not None:
+    if resmpl is not None:
         rDateTimeArr = numpy.zeros(len(sorted_files), dtype=numpy.ndarray)
         rTempArr = numpy.zeros(len(sorted_files), dtype=numpy.ndarray)
         rResultsArr = numpy.zeros(len(sorted_files), dtype=numpy.ndarray)
         rk = numpy.zeros(len(sorted_files), dtype=numpy.ndarray)
 
         for k in range(0, len(sorted_files)):
-            a = utools.isempty(TH_k)
-            rdate, rdata = utools.resample.resample(TH_dateTimeArr[k], TH_tempArr[k], resample)
-            rDateTimeArr[k] = numpy.append(rDateTimeArr[k], rdate)
-            rResultsArr[k] = numpy.append(rResultsArr[k], rdata)
-            rTempArr[k] = numpy.append(rTempArr[k], rdata)
-            rk[k] = numpy.append(rk[k], k)
+            rdate, rdata = resample.resample(TH_dateTimeArr[k], TH_tempArr[k], resmpl)
+            rDateTimeArr[k] = rdate[:]
+            rResultsArr[k] = rdata[:]
+            rTempArr[k] = rdata[:]
+            rk[k] = k
     else:
         rDateTimeArr = TH_dateTimeArr
         rTempArr = TH_tempArr
@@ -1396,20 +1396,21 @@ def convert_tempchain_data_for_lakeStability(harbour_path=None, writepath=None, 
     # write the header first
     header = ['Date']
     for i in range(0,len(TH_dateTimeArr)):
-        st=",%d " % i
-        header.append(','+ st)
+        st="%d " % i
+        header.append(st)
 
     writer.writerow(header)
 
-    waterTempMatrix = numpy.zeros(len(TH_dateTimeArr) + 1, dtype=numpy.ndarray)
+    waterTempMatrix = numpy.zeros((len(rDateTimeArr) + 1,
+                                   len(rDateTimeArr[0])), dtype=numpy.float )
     # write first row with dates
-    for j in range(0, len(rDateTimeArr[0])):
-        waterTempMatrix[0][j] = rDateTimeArr[0][j]
+    waterTempMatrix[0] = rDateTimeArr[0]
 
     # write tenperature one depth per row
     for j in  range(0, len(rTempArr)):
-        for m in range(0, len(rTempArr[j])):
-            waterTempMatrix[j+1][m] = rTempArr[j][m]
+        waterTempMatrix[j+1] = rTempArr[j]
+
+
 
     # transpose
     waterTempMatrix_T = numpy.transpose(waterTempMatrix)
@@ -1429,7 +1430,7 @@ def subplot_lake_harbour(str_date, date, adptype, just_lake=False):
     water_path = '/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Hobo-Apr-Nov-2013/TC-LakeOntario/csv_processed'
     water_path = '/home/bogdan/Documents/UofT/PhD/Data_Files/2012/MOE-Apr-May_2012-Thermistor_chain/csv_processed'
     harbour_path = '/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Hobo-Apr-Nov-2013/AllHarbour/csv_processed/EGap-JarvisDock'
-
+    water_path = '/home/bogdan/Documents/UofT/PhD/Data_Files/2015/loboviz2-temp/csv_processed'
     print("Start subplot_lake_harbour ")
     start_num = date[0]
     end_num = date[1]
@@ -1533,6 +1534,16 @@ def subplot_lake_harbour(str_date, date, adptype, just_lake=False):
         t31 = ['0', '6', '13', '20', '27']
         t32 = [27, 20, 13.5, 6.5, 0]
         tick = [t31, t32]
+
+        # trim all the arrays to the min size
+        ms = len(dateTimeArr[0])
+        for i in range(0, len(dateTimeArr)):
+            ms = min(ms, len(dateTimeArr[i]))
+
+        for i in range(0, len(dateTimeArr)):
+            dateTimeArr[i] = dateTimeArr[i][:ms]
+            resultsArr[i] = resultsArr[i][:ms]
+            tempArr[i] = tempArr[i][:ms]
         
         utools.display_data.display_img_temperatures(dateTimeArr, tempArr, resultsArr, 1, tick, maxdepth, firstlogdepth, maxtemp, \
                                                      fontsize = 18, datetype = datetype, thermocline = True, interp = None, \
@@ -1910,14 +1921,15 @@ if __name__ == '__main__':
     #v = 'temp_fft_all'
     #v = 'conv_wl_delft3d_min'
     #v = 'ctd'
-    #v = "subplot_lake_harbour"
-    v = 'subplot_Dz_ADCP_T_harbour'
+    v = "subplot_lake_harbour"
+    #v = 'subplot_Dz_ADCP_T_harbour'
+    v = 'subplot_Temp_OH_2015'
     #v = "wct_v_t"
     #v = 'avg-vel-profiles'
     #v = "dT_meas_calc"
     #v = 'calc_delft3d_vel'
     # v = "stddev_T"
-    v = "convert_data_for_lakeStability"
+    # v = "convert_data_for_lakeStability"
 
     # map the inputs to the function blocks
     for case in switch(v):
@@ -2129,7 +2141,8 @@ if __name__ == '__main__':
             break
         if case ("subplot_lake_harbour"):
             #for Liset 2012
-            date = ['12/06/15 00:00:00', '12/09/30 00:00:00'] 
+            date = ['12/06/15 00:00:00', '12/09/30 00:00:00']
+            date = ['15/06/01 12:30:00', '15/11/04 12:30:00']
             dt = datetime.strptime(date[0], "%y/%m/%d %H:%M:%S")
             start_num = dates.date2num(dt)
             dt = datetime.strptime(date[1], "%y/%m/%d %H:%M:%S")
@@ -2147,6 +2160,14 @@ if __name__ == '__main__':
             one_V = True
             subplot_Dz_ADCP_T_harbour(date, [start_num, end_num], adptype, one_V)
             break
+        if case ("subplot_Temp_OH_2015"):
+            date = ['15/06/11 12:30:00', '15/11/4 12:30:00']
+            dt = datetime.strptime(date[0], "%y/%m/%d %H:%M:%S")
+            start_num = dates.date2num(dt)
+            dt = datetime.strptime(date[1], "%y/%m/%d %H:%M:%S")
+            end_num = dates.date2num(dt)
+            Temperature.Temperature.subplot_Temp_OH_2015(date, [start_num, end_num])
+            break
         
         if case ("wct_v_t"):
             bin = 0
@@ -2157,7 +2178,7 @@ if __name__ == '__main__':
         if case ("convert_data_for_lakeStability"):
             writepath = '/home/bogdan/Documents/UofT/PhD/Data_Files/2013/LakeStability'
             harbour_path = '/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Hobo-Apr-Nov-2013/AllHarbour/csv_processed/EGap-JarvisDock'
-            date = ['13/04/15 00:00:00', '13/11/10 00:00:00']
+            date = ['13/04/29 00:00:00', '13/11/10 00:00:00']
             dt = datetime.strptime(date[0], "%y/%m/%d %H:%M:%S")
             start_num = dates.date2num(dt)
             dt = datetime.strptime(date[1], "%y/%m/%d %H:%M:%S")
@@ -2165,7 +2186,7 @@ if __name__ == '__main__':
             timeinterv =[start_num, end_num]
             convert_tempchain_data_for_lakeStability(harbour_path=harbour_path,
                                                      writepath=writepath,
-                                                     resample=1. / 6,
+                                                     resmpl=1./24,               # 1h in days
                                                      timeinterv=timeinterv)
       
         if case("dT_meas_calc"):
