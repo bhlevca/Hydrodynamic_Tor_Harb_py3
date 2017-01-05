@@ -440,7 +440,7 @@ class WaterLevelAnalysis(object):
 
         plottitle = False
         ylabel = "Water level [m]"
-        ylabel = "Discharge [$m^3 s^{-1}$]"
+        ylabel = "Discharge [m$^3$ s$^{-1}$]"
         xlabel = "Time [days]"
         
         fftsa.plotLakeLevels(lake_name, bay_name, detrend = detrend, x_label = xlabel, y_label = ylabel, plottitle = plottitle, doy = doy, grid = grid, dateinterval=dateinterval)

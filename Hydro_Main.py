@@ -269,19 +269,18 @@ def WL_FFT_pairs(dateinterval=None):
     #filenames = {'IH model T=0.33h':'Model-HWL-Spadina-T=0.33h_out.csv', 'OH model T=0.33h': 'Model-HWL-TC4-T=0.33h_out.csv'}
     #filenames = {'IH model T=1.0h':'Model-HWL-Spadina-T=1.0h_out.csv', 'OH model T=1.0h': 'Model-HWL-TC4-T=1.0h_out.csv'}
     
-    #filenames = {'Emb C':'EmbC-cross_section_discharge-7-9Aug_out.csv','E Gap':'EG-cross_section_discharge-7-9Aug_out.csv'}
+    filenames = {'Emb C':'EmbC-cross_section_discharge-7-9Aug_out.csv','E Gap':'EG-cross_section_discharge-7-9Aug_out.csv'}
     path_no=1
     #path_no=9
     #path_no=8
     for key, value in filenames.items():
         
-        names = ['Out Harb', key]
-        fnames = [filenames['Inn Harb'], filenames['Out Harb']]
+        #names = ['Out Harb', key]
+        #fnames = [filenames['Inn Harb'], filenames['Out Harb']]
         #names = ['Emb A', key]
         #fnames = [filenames['Emb A'], filenames['Lake Ontario']]
         #fnames = [filenames['IH model'], value]
         #fnames = [filenames['OH model'], filenames['OH data']]
-        #fnames = [filenames['Emb C'], filenames['E Gap']]
         #fnames = [filenames['IH model T=5h'], filenames['OH model T=5h']]
         #fnames = [filenames['IH model T=3.2h'], filenames['OH model T=3.2h']]
         #fnames = [filenames['IH model T=1.7h'], filenames['OH model T=1.7h']]
@@ -290,7 +289,12 @@ def WL_FFT_pairs(dateinterval=None):
         #names = ['Out Harb', key]
         #names = ['TC4', key]
         #names = ['IH model T=5h', 'OH model T=5h']
-        #names = ['Emb C', 'E GAp']
+
+        #for the model discharge
+        fnames = [filenames['Emb C'], filenames['E Gap']]
+        names = ['Emb. C', 'E. Gap']
+        path_no=9
+
         #names = ['OH model', 'OH data']
         #names = ['IH model T=3.2h', 'OH model T=3.2h']
         #names = ['IH model T=1.7h', 'OH model T=1.7h']
@@ -1914,16 +1918,16 @@ if __name__ == '__main__':
     #v = 'wl_fft_all'
     #v = 'vel_fft_pairs'
     #v = 'temp_fft'
-    #v = 'wl_fft_pairs'
+    v = 'wl_fft_pairs'
     #v = 'plot_fft_v_T_wl'
     #v = 'calc_vel_flush'
     #v = 'calc_vel_flush_dh'
     #v = 'temp_fft_all'
     #v = 'conv_wl_delft3d_min'
     #v = 'ctd'
-    v = "subplot_lake_harbour"
+    #v = "subplot_lake_harbour"
     #v = 'subplot_Dz_ADCP_T_harbour'
-    v = 'subplot_Temp_OH_2015'
+    #v = 'subplot_Temp_OH_2015'
     #v = "wct_v_t"
     #v = 'avg-vel-profiles'
     #v = "dT_meas_calc"
@@ -1942,6 +1946,7 @@ if __name__ == '__main__':
         if case('wl_fft_pairs'):
             dates = ['13/08/03 00:00:00', '13/08/04 00:00:00']
             dates = ['13/06/06 00:00:00', '13/10/07 00:00:00']
+            dates = ['13/08/07 00:00:00', '13/08/08 00:00:00']   #for model output discharge
             WL_FFT_pairs(dateinterval=dates)
             break
         if case('vel_fft_pairs'):
