@@ -79,7 +79,7 @@ class Temperature(object):
                     dT[j][i] = H[h]/(D[j]*rho*Cp)*(tres[i]*secs_in_day) 
     
             #im = ax[h].pcolormesh(X, Y, dT, shading = 'gouraud', vmin = -30, vmax = 0)
-            im = ax[h].pcolormesh(X, Y, dT, shading = 'gouraud', vmin = 0, vmax = 30)
+            im = ax[h].pcolormesh(X, Y, dT, shading = 'gouraud', cmap='jet', vmin = 0, vmax = 30)
             
             cb = fig.colorbar(im, ax = ax[h], aspect = 18)
 
@@ -125,7 +125,8 @@ class Temperature(object):
                     continue
                 location = v[0]
                 if text == 'Ah' or text == 'Al':
-                    ax[h].plot(location[0], location[1], 'dr')
+                    pass
+                    #ax[h].plot(location[0], location[1], 'dr')
                 else:
                     ax[h].plot(location[0], location[1], 'dw')
                 
@@ -179,7 +180,8 @@ class Temperature(object):
                     measTemp_excl = []
                     stddev = []
                 for name, data in points.items():
-                    if name == "LO" or name == "EB" or name == "Al" or name == "Ah": # if exclude EB as well
+                    #if name == "LO" or name == "EB" or name == "Al" or name == "Ah": # if exclude EB as well
+                    if name == "LO" or name == "Al" or name == "Ah":  # if exclude EB as well
                         continue
                     D = data[0][1]
                     resTime = data[0][0]
@@ -665,9 +667,6 @@ class Temperature(object):
         print("Start subplot_Temp_OH_2015")
         start_num = date[0]
         end_num = date[1]
-
-
-
 
         # 1) read all T4
         interpolate = 3 #from 30 min to 10 interval

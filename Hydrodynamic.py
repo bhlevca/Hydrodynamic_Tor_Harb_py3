@@ -8,7 +8,7 @@ import rdradcp.plot_ADCP_vel_FFT as plot_ADCP_vel_FFT
 import rdradcp.plot_ADCP_velocity as plot_ADCP_velocity
 import rdradcp.writebins as writebins
 import rdradcp.Timer
-
+import csv
 import pcadcp.rdTxtPcAdp as rdTxtPcAdp
 
 import ufft.spectral_analysis
@@ -24,6 +24,7 @@ import matplotlib.dates as dates
 import numpy, scipy
 import Water_Level
 import utools.interpolate_data
+import matplotlib
 
 class Hydrodynamic(object):
     '''
@@ -106,9 +107,28 @@ class Hydrodynamic(object):
         # display
         display_data.plot_hodograph(name, ur, vr, bins, dt, tunit = tunit, vunit = vunit, \
                                     disp_lunit = lunit, fontsize = fontsize, title = title, modd = modd)
-        
-        
 
+
+    #-------------------------------------------------------------------------------------------------------------------
+    def get_Velocities(self, adptype, date, num_segments, delft3d=False, d3d_int=3, adcp=None):
+
+        if adcp is not None:
+            self.adcp = adcp
+            self.cfg = adcp.config
+            self.ens = None
+            self.hdr = None
+        elif adptype == 'EmbC' or adptype == 'OH' or adptype == 'WGap' or adptype == 'EGap' or adptype == 'TI' :
+            self.readRawBinADCP()
+        else:
+            self.readPcAdpVel()
+
+        self.select_data_dates(delft3d=delft3d, d3d_int=d3d_int)
+            # these ones have dates already selected from reading. no select_data_dates is necessary
+        # endif
+        return self
+
+
+    #-------------------------------------------------------------------------------------------------------------------
     def readPcAdpVel(self, velprofiles = False):
         velocities, timevec, goodbins = self.pcadp.readVel()
         self.results_u = velocities['ve']
@@ -158,7 +178,7 @@ class Hydrodynamic(object):
         try:
             with rdradcp.Timer.Timer() as t:
                 [self.adcp, self.cfg, self.ens, self.hdr] = \
-                    readRawBinADCP(self.path + '/' + self.filename, 1, [700, 239800], 'info', 'yes', 'baseyear', 2000, 'despike', 'yes', 'debug', 'no')
+                    readRawBinADCP(self.path + '/' + self.filename, 1, [700, 239800], 'info', 'yes', 'baseyear', 2000, 'despike', 'yes', 'debug', 'no') \
 
                 #===============================================================
                 # [self.adcp, self.cfg, self.ens, self.hdr] = \
@@ -451,7 +471,240 @@ class Hydrodynamic(object):
                                                              log = log, fontsize = 20, tunits = tunits)
 
 
-    def plot_Temp_FFT(self, locname, smooth = False, tunits = "day", funits = "Hz", \
+    #---------------------------------------------------------------------------------------------------------------
+    def Vel_profiles_2016_ADCP(self, date, adptype='OH', firstbin=1, interval=1,
+                               ADCPprof=False, grad_valong=False, clockwise=False, adcp=None):
+        '''
+         Based on the rotation transformation with counter clockwise
+          (+) is going to the bay
+          (-) in coming out of the bay into Outer harbour
+
+        '''
+        print("Processing graphs for ADCP: %s" % adptype)
+
+        matplotlib.mathtext.SHRINK_FACTOR = 0.9
+
+
+        # + direction is TO outer harbour and to Lake Ontario
+        num_segments = self.num_segments
+
+        factor = 1.  # 1 hour in days
+        factor = 6.  # 10 minutes  in days
+
+        dt = 1. / 24. / factor
+        labels = [' velocity [m/s]']
+
+        self.get_Velocities(adptype, date, num_segments, adcp=adcp)
+
+        if adptype == 'OH':
+            Yrange = [0.0, 7.5]
+            Xrange = [-0.70, 0.70]
+        elif adptype == "EmbC":
+            Yrange = [0.0, 5.5]
+            Xrange = [-0.70, 0.70]
+        elif adptype == "TI":
+            Xrange = [-0.7, 0.9]
+            Yrange = [0.0, 5.5]
+        elif adptype == "EGap":
+            Xrange = [-0.7, 0.9]
+            Yrange = [0.0, 5.5]
+        elif adptype == "WGap":
+            Xrange = [-0.7, 0.9]
+            Yrange = [0.0, 5.5]
+
+        if clockwise:
+            angles_from_N = {'OH':37, 'EmbC':127,'TI':165, 'EGap': 129, 'WGap': 56}    # for clockwise
+            # + sign is into Cell3   and to Cherry beach and into the TI channels and out from the EGap
+        else:
+            # for counter clockwise  and vp the along dir
+            angles_from_N = {'OH': 143, 'EmbC': 53, 'TI': 15, 'EGap': 51, 'WGap': 124}
+
+        # reproject on the direction of thde flow
+        Theta = angles_from_N[adptype]  # 35.1287  # degrees
+        tet = 2 * math.pi * Theta / 360
+        up, vp = self.rotation_transform(tet, clockwise=clockwise)
+
+        # if counterclockwise vp is the along the channel veloccity and + (PLUS) is toward the lake
+        # if clockwise up is the along the channel veloccity and + (PLUS) is toward the embayment
+        print(
+            "htime-0=%f, htime0-1=%f, size=%d" % (self.time[0][0], self.time[0][len(self.time[0]) - 1], len(self.time[0])))
+
+        upw_str = '16/07/20 12:00:00'
+        dt = datetime.datetime.strptime(upw_str, "%y/%m/%d %H:%M:%S")
+        upwell = dates.date2num(dt)
+
+        dw_str = '16/07/26 12:00:00'
+        dt = datetime.datetime.strptime(dw_str, "%y/%m/%d %H:%M:%S")
+        downwell = dates.date2num(dt)
+
+        stab_str = '16/08/05 12:00:00'
+        dt = datetime.datetime.strptime(stab_str, "%y/%m/%d %H:%M:%S")
+        stable = dates.date2num(dt)
+        profiledates = [stable, upwell, downwell]
+
+        # profiledates = None
+        revert = True  # True 0 bin bottom of graph because it is reversing limits in the routine below
+
+        diff = 0 #self.goodbins - len(vp)
+        if diff == 0:
+            timearr = self.time[:]
+            velarr = vp[:]
+        else:
+            timearr = self.time[:diff]
+            velarr = vp[:diff]
+        utools.display_data.display_avg_vertical_temperature_profiles_err_bar_range([timearr], [velarr],
+                                                                                    startdeptharr=[0],
+                                                                                    profiledates=profiledates, doy=True,
+                                                                                    revert=revert,
+                                                                                    legendloc=4,
+                                                                                    xlabel=' Velocity [$m s^{-1}$]',
+                                                                                    errbar=True, rangebar=True,
+                                                                                    debug=False)
+
+        if grad_valong or ADCPprof:
+            # 3) Mixed water, air ,img data
+            # ToDO: Add short and long radiation
+            print("Grad Valong Start display mixed subplots  ")
+            grad = []
+            V_T = numpy.transpose(vp)
+            U_T = numpy.transpose(up)
+
+            # TODO get the config value
+            dz = adcp.config.cell_size
+            for i in range(0, len(self.time[0])):
+                dvdz = []
+                for j in range(0, len(self.time) - 1):
+                    W1 = math.sqrt(V_T[i][j + 1] ** 2 + U_T[i][j + 1] ** 2)
+                    W2 = math.sqrt(V_T[i][j] ** 2 + U_T[i][j] ** 2)
+                    dvdz.append((W1 - W2) / dz / 2)
+
+                dvdz.insert(0, (0 + dvdz[0]) / 2.)  # insert fist item to match the velocity array size
+                grad.append(dvdz)
+
+            gradarr = numpy.array(grad)
+            grad_T = numpy.transpose(gradarr)
+
+            if adptype == "WGap":
+                dd = 1  # for Cell 3
+            elif adptype == "EmbC":
+                dd = 2
+            elif adptype == "OH":
+                dd = 3
+            else:
+                dd = 1
+
+            dateTimes3 = [self.time[:-dd], self.time[:-dd], self.time[:-dd]]
+            ylabels3 = ["Depth [m]", "Depth [m]", "Depth [m]"]
+
+            imgs = [vp[:-dd], up[:-dd], grad_T[:-dd]]
+            # imgs = [self.results_u[:-dd], self.results_v[:-dd]] #Harbour first
+
+            if adptype == 'OH' or adptype == 'EGap':
+                t11 = ['0', '3', '6', '10']
+                t12 = [10, 6, 3, 0]
+
+                t21 = ['0', '3', '6', '10']
+                t22 = [10, 6, 3, 0]
+
+                t31 = ['0', '3', '6', '10']
+                t32 = [10, 6, 3, 0]
+
+                # maxdepth = [9, 27] # Harbour first
+                maxdepth = [10, 10, 10]
+                # firstlogdepth = [0, 3] Harbour first
+                firstlogdepth = [0, 0, 0]
+                mindepths = [0, 0, 0]
+                maxtemp = [0.2, 0.2, 0.05]
+                mintemps = [-0.2, -0.2, -0.05]
+            elif adptype == 'WGap':
+                t11 = ['0', '3', '9', '9']
+                t12 = [9, 6, 3, 0]
+
+                t21 = ['0', '3', '6', '9']
+                t22 = [9, 6, 3, 0]
+
+                t31 = ['0', '3', '6', '9']
+                t32 = [9, 6, 3, 0]
+
+                # maxdepth = [9, 27] # Harbour first
+                maxdepth = [9, 9, 9]
+                # firstlogdepth = [0, 3] Harbour first
+                firstlogdepth = [0, 0, 0]
+                mindepths = [0, 0, 0]
+                maxtemp = [0.2, 0.2, 0.05]
+                mintemps = [-0.2, -0.2, -0.05]
+            elif adptype == "EmbC":
+                t11 = ['0', '1.5', '3.0', '4.5']
+                t12 = [4.5, 3, 1.5, 0]
+
+                t21 = ['0', '1.5', '3.0', '4.5']
+                t22 = [4.5, 3, 1.5, 0]
+
+                t31 = ['0', '1.5', '3.0', '4.5']
+                t32 = [4.5, 3, 1.5, 0]
+
+                # maxdepth = [9, 27] # Harbour first
+                maxdepth = [4.5, 4.5, 4.5]
+                # firstlogdepth = [0, 3] Harbour first
+                firstlogdepth = [0, 0, 0]
+                mindepths = [0, 0, 0]
+                maxtemp = [0.2, 0.2, 0.05]
+                mintemps = [-0.2, -0.2, -0.05]
+            elif adptype == "TI":
+                t11 = ['0', '2', '4', '6.5']
+                t12 = [6.5, 4, 2, 0]
+
+                t21 = ['0', '2', '4', '6.5']
+                t22 = [6.5, 4, 2, 0]
+
+                t31 = ['0', '2', '4', '6.5']
+                t32 = [6.5, 4, 2, 0]
+
+                # maxdepth = [9, 27] # Harbour first
+                maxdepth = [6.5, 6.5, 6.5]
+                # firstlogdepth = [0, 3] Harbour first
+                firstlogdepth = [0, 0, 0]
+                mindepths = [0, 0, 0]
+                maxtemp = [0.2, 0.2, 0.05]
+                mintemps = [-0.2, -0.2, -0.05]
+
+            tick = [[t11, t12], [t21, t22], [t31, t32]]
+
+            # limits = [None, None, [-1, 10], None, None ] <= this datesscrews up the tickers
+            limits = None
+
+            if grad_valong:
+                utools.display_data.display_mixed_subplot(dateTimes1=[], data=[], varnames=[], ylabels1=[],
+                                                          dateTimes2=[], groups=[], groupnames=[], ylabels2=[],
+                                                          dateTimes3=dateTimes3, imgs=imgs, ylabels3=ylabels3, ticks=tick,
+                                                          maxdepths=maxdepth, mindepths=mindepths, mintemps=mintemps,
+                                                          firstlogs=firstlogdepth, maxtemps=maxtemp,
+                                                          fnames=None, revert=True, custom=None, maxdepth=None, tick=None,
+                                                          firstlog=None, yday=True, title=False, grid=False, limits=limits,
+                                                          sharex=True, fontsize=18, group_first=False, interp=2,
+                                                          cblabel=[r'$\mathsf{U_{alg}}$ [$\mathsf{m\ s^{-1}}$]',
+                                                                   r'$\mathsf{V_{crs}}$ [$\mathsf{m\ s^{-1}}$]',
+                                                                   r'$\mathsf{dV\ dz^{-1}}$ [$\mathsf{s^{-1}}$]'])
+
+            if ADCPprof:
+                imgs = [self.results_u[:-dd], self.results_v[:-dd], self.results_z[:-dd]]
+                utools.display_data.display_mixed_subplot(dateTimes1=[], data=[], varnames=[], ylabels1=[],
+                                                          dateTimes2=[], groups=[], groupnames=[], ylabels2=[],
+                                                          dateTimes3=dateTimes3, imgs=imgs, ylabels3=ylabels3, ticks=tick,
+                                                          maxdepths=maxdepth,
+                                                          mindepths=mindepths, mintemps=mintemps, firstlogs=firstlogdepth,
+                                                          maxtemps=maxtemp,
+                                                          fnames=None, revert=True, custom=None, maxdepth=None, tick=None,
+                                                          firstlog=None, yday=True,
+                                                          title=False, grid=False, limits=limits, sharex=True, fontsize=18,
+                                                          group_first=False, interp=2,
+                                                          cblabel=["$V_E$ [$m s^{-1}$]", "$V_N$ [$m s^{-1}$]",
+                                                                   "$V_U$ [$m s^{-1}$]"])
+
+
+
+    #-------------------------------------------------------------------------------------------------------------------
+    def plot_Temp_FFT(self, locname, smooth = False, tunits = "day", funits = "Hz",
                  log = False, grid = False, type = 'power', withci = True, sel_dates = True):
         window = "hanning"
 
@@ -465,7 +718,7 @@ class Hydrodynamic(object):
 
         
         
-        fftsa = fftGraphs.FFTGraphs(path = None, file1 = None, file2 = None, show = None, \
+        fftsa = fftGraphs.FFTGraphs(path = None, file1 = None, file2 = None, show = None,
                                        data = [self.time, self.results_temp], data1 = None)
 
         date1st = True
@@ -541,12 +794,15 @@ class Hydrodynamic(object):
             plot_ADCP_velocity.print_profile(name, profiles[i], datetimes[i], firstbin, \
                                              Xrange= Xrange, Yrange=Yrange, interval = interval, spline=True, save = save, dzdt = dzdt[i])
             
-    def display_subplots(self, date, dateIg, dataarr, dnames = None, yday = None, tick = None, legend = None, hourgrid = False, img=False, cbrange = [-1,1], maxdepth=5.0):    
-        plot_ADCP_velocity.display_subplots(date, dateIg, dataarr, dnames = dnames, yday = yday, tick = tick, legend = legend, hourgrid = hourgrid, \
+    def display_subplots(self, date, dateIg, dataarr, dnames = None, yday = None, tick = None, legend = None,
+                         hourgrid = False, img=False, cbrange = [-1,1], maxdepth=5.0):
+        plot_ADCP_velocity.display_subplots(date, dateIg, dataarr, dnames = dnames, yday = yday,
+                                            tick = tick, legend = legend, hourgrid = hourgrid, \
                                             img=img, cbrange = cbrange, maxdepth= maxdepth, minorlabel=False)  
         
-    def plot_FFT_V_T_WL(self, time, V, Ttime, T, WL, WTime, scale = 'log', drawslope = False ):
-        plot_ADCP_vel_FFT.plot_FFT_Three_V_T_WL(time, V, Ttime, T, WL, WTime, scale = scale, drawslope = drawslope)
+    def plot_FFT_V_T_WL(self, time, V, Ttime, T, WL, WTime, scale='log', drawslope=False, plotTemp=False ):
+        plot_ADCP_vel_FFT.plot_FFT_Three_V_T_WL(time, V, Ttime, T, WL, WTime, scale = scale,
+                                                drawslope=drawslope, plotTemp=plotTemp)
     
     @staticmethod
     def get_data_from_file(fname, timeinterv, rpath = None):
@@ -600,6 +856,59 @@ class Hydrodynamic(object):
     def ReadVolfromCSV(fname, level):
         return plot_ADCP_velocity.ReadVolfromCSV(fname, level)
     
-    
+    @staticmethod
+    def read_Loboviz2datefile(path, filename):
+        ifile = open(path + '/' + filename, 'rt', encoding="ISO-8859-1")
+        reader = csv.reader(ifile, delimiter=',', quotechar='"')
+        rownum = 0
+        temp = []
+        east = []
+        north = []
+        up = []
+        dateTime = []
+        datenum = []
+        printHeaderVal = True
+
+        for row in reader:
+            # skip comments with @
+            if row[0][:1] == '@':
+                continue
+
+            # Save header row.
+            strg = row[0]
+            if strg[0] == '#':
+                header = row
+                if printHeaderVal == True:
+                    colnum = 0
+                    for col in row:
+                        print('%-8s: %s' % (header[colnum], col))
+                        colnum += 1
+            else:
+                newrow = True
+                for ir in range(0, len(row)):
+                    if ir == 0:
+                        dateTime.append(row[ir])
+                    elif ir == 1:
+                        datenum.append(row[ir])
+                    elif ir == 2:
+                        temp.append(float(row[ir]))
+                    elif header[ir][:4] == 'east':
+                        if newrow:
+                            east.append([])
+                        east[rownum - 1].append(float(row[ir]))
+                        newrow = False
+                    elif header[ir][:4] == 'nort':
+                        if newrow or len(north) <= rownum - 1:
+                            north.append([])
+                        north[rownum - 1].append(float(row[ir]))
+                        newrow = False
+                    elif header[ir][:2] == 'up':
+                        if newrow or len(up) <= rownum - 1:
+                            up.append([])
+                        up[rownum - 1].append(float(row[ir]))
+                        newrow = False
+            rownum += 1
+        ifile.close()
+        return [temp, dateTime, datenum, east, north, up]
   
         

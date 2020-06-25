@@ -32,6 +32,7 @@ class WaterLevelAnalysis(object):
             self.date = [tinterv[0], tinterv[1]]
         else:
             self.date = None
+            
     def getDict(self):
         return self.dict
 
@@ -212,11 +213,11 @@ class WaterLevelAnalysis(object):
         # perform FFT
         y = np.zeros((den - 1, M), dtype = np.float)  # data segments
         Tm = np.zeros((den - 1, M), dtype = np.float)  # time segments
-        fftx = np.zeros((den - 1, M / 2 + 1), dtype = np.complex)  # transform segments
+        fftx = np.zeros((den - 1, int(M / 2) + 1), dtype = np.complex)  # transform segments
         NumUniquePts = np.zeros(den - 1)  # point segments
-        amplit = np.zeros((den - 1, M / 2 + 1), dtype = np.float)  # amplit segments
-        f = np.zeros((den - 1, M / 2 + 1), dtype = np.float)  # freq segments
-        power = np.zeros((den - 1, M / 2 + 1), dtype = np.complex)  # power segments
+        amplit = np.zeros((den - 1, int(M / 2) + 1), dtype = np.float)  # amplit segments
+        f = np.zeros((den - 1, int(M / 2) + 1), dtype = np.float)  # freq segments
+        power = np.zeros((den - 1, int(M / 2) + 1), dtype = np.complex)  # power segments
 
         for i in range(0, den - 1):
             a = self.calculateFFT(t[i], x[i], tunits, window)
@@ -247,7 +248,7 @@ class WaterLevelAnalysis(object):
     # end
 
 
-    def filter(self, Time, SensorDepth, tunits):
+    def bandfilter(self, Time, SensorDepth, tunits, filter):
         '''
         '''
         # prepare for the amplitude spectrum analysis
@@ -257,7 +258,7 @@ class WaterLevelAnalysis(object):
             factor = 3600
         else:
             factor = 1
-        dt_s = (dates[2] - dates[1]) * factor  # Sampling period [s]
+        dt_s = (Time[2] - Time[1]) * factor  # Sampling period [s]
         Fs = 1 / dt_s  # Samplig freq    [Hz]
 
         # Filter data here on the whole lenght

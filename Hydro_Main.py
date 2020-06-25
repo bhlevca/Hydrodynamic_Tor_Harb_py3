@@ -16,7 +16,9 @@ import matplotlib.mathtext
 from datetime import datetime
 import utools
 import resample
-
+import rdradcp.RdiAdcpDataReadWrite as adcpTxt
+from matplotlib.dates import num2date
+import rdradcp
 
 windows = ['flat', 'hanning', 'hamming', 'bartlett', 'blackman']
 window_6hour = "window_6hour"  # 30 * 6 for a 2 minute sampling
@@ -61,6 +63,16 @@ paths = {1:'/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Hobo-Apr-Nov-2013/WL
        5:'/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Volume-Calculations',
        6:'/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Carleton-Nov2013/csv_processed',
        7:'/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Hobo-Apr-Nov-2013/ClimateMap',
+       8:'/home/bogdan/Documents/UofT/MITACS-TRCA/3DModel/Output_data',
+       9:'/home/bogdan/Documents/UofT/MITACS-TRCA/3DModel/Output_data/Model-discharge'}
+
+paths = {1:'M:\MIKE_PROJECTS\Data_Files/2013/Hobo-Apr-Nov-2013/WL/csv_press_corr',
+       2:'M:\MIKE_PROJECTS\Data_Files/2013/ADCP-TorHarb',
+       3:'M:\MIKE_PROJECTS\Data_Files/2013/ADCP-TorHarb/PC-ADP/processed',
+       4:'M:\MIKE_PROJECTS\Data_Files/2010/Toberymory_tides',
+       5:'M:\MIKE_PROJECTS\Data_Files/2013/Volume-Calculations',
+       6:'M:\MIKE_PROJECTS\Data_Files/2013/Carleton-Nov2013/csv_processed',
+       7:'M:\MIKE_PROJECTS\Data_Files/2013/Hobo-Apr-Nov-2013/ClimateMap',
        8:'/home/bogdan/Documents/UofT/MITACS-TRCA/3DModel/Output_data',
        9:'/home/bogdan/Documents/UofT/MITACS-TRCA/3DModel/Output_data/Model-discharge'}
 
@@ -184,7 +196,8 @@ def WL_FFT_analysis_all():
         # plot the original Lake oscillation input
         xlabel = 'Time [days]'
         # ylabel = 'Z(t) [m]'
-        ylabel = '|Z(f)| [m]'
+        #ylabel = '|Z(f)| [m]'
+        ylabel = 'depth [m]'
         ts_legend = [key + ' - water levels [m]']
         wla.plotTimeSeries("Lake levels", xlabel, ylabel, dates, depths, ts_legend)
         # end plot
@@ -210,7 +223,7 @@ def WL_FFT_analysis_all():
         plottitle = False
         ymax = None  # 0.01
         wla.plotSingleSideAplitudeSpectrumFreq(data, funits = funits, y_label = ylabel, title = title, log = logarithmic, \
-                                            fontsize = 18, tunits = tunits, plottitle = plottitle, grid = grid, \
+                                            fontsize = 30, tunits = tunits, plottitle = plottitle, grid = grid, \
                                             ymax = ymax)
 
         if wav:
@@ -251,7 +264,7 @@ def WL_FFT_pairs(dateinterval=None):
     #filenames = {'Emb A':'10279443_corr.csv', 'Lake Ontario':'10279444_corr.csv'}
     #filenames = {'TC4':'01-13-Aug-Water_level_TC4_out.csv','Spadina':'01-13-Aug-Water_level_Spadina_out.csv'}
     #Original output with input from Spadina real data
-    #filenames = {'IH model':'01-13-Aug-WL-Spadina_out.csv','IH data':'13320-01-AUG-13-AUG-2013.csv'}
+    filenames = {'IH model':'01-13-Aug-WL-Spadina_out.csv','IH data':'13320-01-AUG-13-AUG-2013.csv'}
     #filenames = {'IH data':'13320-01-AUG-13-AUG-2013.csv', 'IH model':'01-13-Aug-WL-Spadina_out.csv'}
     #Output with input from Spadina real data divided by 3 +shift 36 min
     #filenames = {'IH data':'13320-01-AUG-13-AUG-2013.csv', 'IH model':'01-13-Aug-Water_level_Spadina_out.csv'}
@@ -269,17 +282,18 @@ def WL_FFT_pairs(dateinterval=None):
     #filenames = {'IH model T=0.33h':'Model-HWL-Spadina-T=0.33h_out.csv', 'OH model T=0.33h': 'Model-HWL-TC4-T=0.33h_out.csv'}
     #filenames = {'IH model T=1.0h':'Model-HWL-Spadina-T=1.0h_out.csv', 'OH model T=1.0h': 'Model-HWL-TC4-T=1.0h_out.csv'}
     
-    filenames = {'Emb C':'EmbC-cross_section_discharge-7-9Aug_out.csv','E Gap':'EG-cross_section_discharge-7-9Aug_out.csv'}
-    path_no=1
+
+    #filenames = {'Emb C':'EmbC-cross_section_discharge-7-9Aug_out.csv','E Gap':'EG-cross_section_discharge-7-9Aug_out.csv'}
+    #path_no=1
     #path_no=9
-    #path_no=8
+    path_no=8
     for key, value in filenames.items():
         
         #names = ['Out Harb', key]
         #fnames = [filenames['Inn Harb'], filenames['Out Harb']]
         #names = ['Emb A', key]
         #fnames = [filenames['Emb A'], filenames['Lake Ontario']]
-        #fnames = [filenames['IH model'], value]
+        fnames = [filenames['IH model'], value]
         #fnames = [filenames['OH model'], filenames['OH data']]
         #fnames = [filenames['IH model T=5h'], filenames['OH model T=5h']]
         #fnames = [filenames['IH model T=3.2h'], filenames['OH model T=3.2h']]
@@ -291,11 +305,12 @@ def WL_FFT_pairs(dateinterval=None):
         #names = ['IH model T=5h', 'OH model T=5h']
 
         #for the model discharge
-        fnames = [filenames['Emb C'], filenames['E Gap']]
-        names = ['Emb. C', 'E. Gap']
-        path_no=9
+        #fnames = [filenames['Emb C'], filenames['E Gap']]
+        #names = ['Emb. C', 'E. Gap']
+        #path_no=9
 
         #names = ['OH model', 'OH data']
+        names = ['IH model', 'IH data']
         #names = ['IH model T=3.2h', 'OH model T=3.2h']
         #names = ['IH model T=1.7h', 'OH model T=1.7h']
         #names = ['IH model T=0.33h', 'OH model T=0.33h']
@@ -394,7 +409,7 @@ def get_Dz_Dt(adptype, path, num_segments, date, dt):
     filenames = {'OH':'10279444_corr.csv', 'EmbC':'10238147_corr.csv', 'Cell3':'10279699_corr.csv', \
                  'Cell1':'10279696_corr.csv', 'Cell2':'10279693_corr.csv', \
                  'EmbA':'10279443_corr.csv', 'EmbB':'1115681_corr.csv'}
-    num_segments = 10
+
     wla = Water_Level.WaterLevelAnalysis(path, filenames, num_segments, date)
    
     [dates, depths] = wla.read_press_corr_file(path, filenames[adptype])
@@ -404,25 +419,23 @@ def get_Dz_Dt(adptype, path, num_segments, date, dt):
     #rtime2, dzdt = wla.delta_z_mov_average(dates, depths, dt)
     print("rtime2-0=%f, rtime2-1=%f, size=%d" % (rtime[0], rtime[len(rtime) - 1], len(rtime)))
     return wla, rtime, rdepths, rdzdt, dates, depths, dzdt
-    
-def get_Velocities(adptype, date, num_segments, delft3d=False, d3d_int=3): 
+
+
+#-----------------------------------------------------------------------------------------------------------------------
+def get_Velocities(adptype, date, num_segments, delft3d=False, d3d_int=3):
     if adptype == 'EmbC' or adptype == 'OH':
         print("Process RDI-Teledyne")
-        filenames = {'EmbC':'1200mhz-EMBC_004.000', 'OH':'600mhz-DPL_002.000'}
-        # hyd = Hydrodynamic.Hydrodynamic(filenames['OH'], paths[2], num_segments, date)
-        hyd = Hydrodynamic.Hydrodynamic(filenames[adptype],adptype,  paths[2], num_segments, date)
-        hyd.readRawBinADCP()
-        hyd.select_data_dates(delft3d=delft3d, d3d_int=d3d_int)
+        filenames = {'EmbC': '1200mhz-EMBC_004.000', 'OH': '600mhz-DPL_002.000'}
+        hyd = Hydrodynamic.Hydrodynamic(filenames[adptype], adptype, paths[2], num_segments, date)
     else:
-        print("Process PC ADP") 
+        print("Process PC ADP")
         ctlfile = 'MODE006.ctl'
         fnames = ['MODE006.ve', 'MODE006.vn', 'MODE006.vu']
-        
-        hyd = Hydrodynamic.Hydrodynamic(adptype, adptype, paths[3], num_segments, date, ctlname = ctlfile, filenames = fnames)
-        hyd.readPcAdpVel()
-        hyd.select_data_dates(delft3d=delft3d, d3d_int=d3d_int)
-            # these ones have dates already selected from reading. no select_data_dates is necessary
-    #endif
+        hyd = Hydrodynamic.Hydrodynamic(adptype, adptype, paths[3], num_segments, date, ctlname=ctlfile,
+                                        filenames=fnames)
+
+    hyd.get_Velocities(adptype, date, num_segments, delft3d, d3d_int)
+
     return hyd
 
 def Dz_Dt_Du(date, bin, adptype = 'Cell3'):
@@ -955,12 +968,14 @@ def plot_FFT_V_T_WL(adptype, date, scale = 'log', drawslope = False, resample = 
     
     if adptype == "OH":
         harbour_path = "/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Hobo-Apr-Nov-2013/TC-OuterHarbour/csv_processed/AboveBottom/1_Station_21"
+        #harbour_path = "M:\MIKE_PROJECTS\Data_Files/2013/Hobo-Apr-Nov-2013/TC-OuterHarbour/csv_processed/AboveBottom/1_Station_21"
         fname = "Bot_St21.csv"
         start_num = hyd.get_date_num(daterange[0], FORMAT)
         end_num= hyd.get_date_num(daterange[1], FORMAT)
         dateTime, temp, results = hyd.get_data_from_file(fname, timeinterv = [start_num, end_num], rpath = harbour_path)
     elif adptype == "Cell3":
         harbour_path = "/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Hobo-Apr-Nov-2013/ClimateMap"
+        #harbour_path = "M:\MIKE_PROJECTS\Data_Files/Data_Files/2013/Hobo-Apr-Nov-2013/ClimateMap"
         fname = "Cell3.csv"
         ctlfile = 'MODE006.ctl'
         fnames = ['MODE006.hdr']
@@ -970,8 +985,9 @@ def plot_FFT_V_T_WL(adptype, date, scale = 'log', drawslope = False, resample = 
         dateTime, temp = hydpcadp.readPcAdpTemp()
     elif adptype == "EmbC":
         harbour_path = "/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Hobo-Apr-Nov-2013/ClimateMap"
+        #harbour_path = "M:\MIKE_PROJECTS\Data_Files/2013/Hobo-Apr-Nov-2013/ClimateMap"
         fname = "EmbC.csv"
-        fname = "Emb_C_West_Embayment.csv"
+        #fname = "Emb_C_West_Embayment.csv"
         # or 
         #harbour_path = "/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Hobo-Apr-Nov-2013/AllHarbour/csv_processed"
         #fname = "1020950.csv"
@@ -982,12 +998,13 @@ def plot_FFT_V_T_WL(adptype, date, scale = 'log', drawslope = False, resample = 
     
     
     #4) Plot 
-    hyd.plot_FFT_V_T_WL(rvtime, rvp, dateTime, temp, rdepths, rtime, scale = 'loglog', drawslope = drawslope )
+    hyd.plot_FFT_V_T_WL(rvtime, rvp, dateTime, temp, rdepths, rtime, scale = 'loglog',
+                        drawslope = drawslope, plotTemp=False)
     
     
     
 def subpl_wl_dz_vel(date, adptype, resampled=False, hourgrid=False, doy=False, img=False, cbrange=[-1,1],
-                    wl=True, plot_interval=1./6):
+                    wl=True, dz_dt=False, plot_interval=1./6):
     '''
     Creates a 3 layer subplot with:
         1) water levels
@@ -1015,6 +1032,7 @@ def subpl_wl_dz_vel(date, adptype, resampled=False, hourgrid=False, doy=False, i
     up, vp = hyd.rotation_transform(tet, clockwise=False)
 
     rvp = []
+    ticks = None
     if img:
         # imgs do not resample
         if adptype == "OH":
@@ -1023,6 +1041,9 @@ def subpl_wl_dz_vel(date, adptype, resampled=False, hourgrid=False, doy=False, i
             vp = vp[:-2].tolist()
         elif adptype == "Cell3": 
             vp = vp[:-1].tolist()
+            t11 = ['0', '1.5', '3.0', '4.5']
+            t12 = [4.5, 3, 1.5, 0]
+            ticks = [[t11, t12], [t11, t12]]
         else:
             vp = vp.tolist()
                 
@@ -1069,16 +1090,18 @@ def subpl_wl_dz_vel(date, adptype, resampled=False, hourgrid=False, doy=False, i
     dataarr = []
     if resampled:
         if wl:
-            dataarr.append(rdepths[:-10])
-        dataarr.append(numpy.array(rdzdt[:-10]) / 24)
+            #dataarr.append(rdepths[:-10])
+            dataarr.append(rdepths[:-10][::-1]+1)
+        if dz_dt:
+            dataarr.append(numpy.array(rdzdt[:-10]) / 24)
         dataarr.append(rvp)
         date = rtime[:-10]
         dateImg = rvtime
     else:
         if wl:
-            dataarr.append(depths[:-1])
-
-        dataarr.append(numpy.array(dzdt[:-1]) / 24)
+            dataarr.append(depths[:-1][::1])          #reverse
+        if dz_dt:
+            dataarr.append(numpy.array(dzdt[:-1]) / 24)
         dataarr.append(rvp)
         date = dates[:-1]
         if type(hyd.time[0]) is list:
@@ -1087,15 +1110,19 @@ def subpl_wl_dz_vel(date, adptype, resampled=False, hourgrid=False, doy=False, i
             dateImg = hyd.time[0].tolist()
     # labels = ['Z [$m$]', 'dz/dt [$m$]','velocity [$m s^{-1}$]']
 
-    if wl:
+    if wl and dz_dt:
         labels = [r'$\mathsf{Z\ [m]}$', r'$\mathsf{dZ\ dt^{-1}\ [m\ h^{-1}}$]','Depth [m]']
+    elif wl:
+        labels = [r'$\mathsf{Z\ [m]}$', 'Depth [m]']
+    elif dz_dt:
+        labels =  [r'$\mathsf{dZ\ dt^{-1}\ [m\ h^{-1}}$]', 'Depth [m]']
     else:
         labels = [r'$\mathsf{dZ\ dt^{-1} [m\ h^{-1}}$]',"Depth [m]"]
     
-    hyd.display_subplots(date, dateImg, dataarr, dnames=labels, yday=doy, tick=None, legend=legend,
+    hyd.display_subplots(date, dateImg, dataarr, dnames=labels, yday=doy, tick=ticks, legend=legend,
                          hourgrid=hourgrid, img=img, cbrange=cbrange, maxdepth=maxdepth[adptype])
 
-def calc_velocities(adptype, date, avg=True, interv = 1, resampled =False, delft3d=False):
+def calc_velocities(adptype, date, avg=True, interv = 1, resampled =False, delft3d=False, returnQ=True):
     '''
     Calculates the Depth averaged velocity at the vertical of the ADCP
     @param interv: = 1 #hours
@@ -1125,6 +1152,7 @@ def calc_velocities(adptype, date, avg=True, interv = 1, resampled =False, delft
 
 
 
+
     rvp = []
     for i in range(0, hyd.goodbins):
         if resampled:
@@ -1136,9 +1164,9 @@ def calc_velocities(adptype, date, avg=True, interv = 1, resampled =False, delft
     tottime=0
      
     if avg:
-        pos_vel= []
-        neg_vel= []
-        
+        pos_vel = []
+        neg_vel = []
+        all_vel = []
         if resampled:
             time = rvtime
             vel = numpy.array(rvp)
@@ -1149,20 +1177,32 @@ def calc_velocities(adptype, date, avg=True, interv = 1, resampled =False, delft
             vel= numpy.array(vp)
             dt0 = (time[0][2] - time[0][1])
             lenght = len(time[0])
-        
+
+        qtsfname = paths[5] + "/" + adptype + "_q_ADCP_TS.csv"
+        print("Writing Q TS to file: %s " % (qtsfname))
+
         vel_T = numpy.transpose(vel)
         for j in range(0, lenght):
             #Mean Depth Averaged Velocity
             mvel = numpy.mean(vel_T[j])
+            # Write the Q Timeseries
+            uq = CrossArea[adptype] * mvel * dt0 * 84600
+            dt = num2date(time[0][j])
+            datestr = dt.strftime("%Y-%m-%d %H:%M:%S")
+            hyd.writeVeltoCSV(qtsfname, [datestr, uq], append=True, delft3d=delft3d)
+
             tottime +=dt0
+            all_vel.append(mvel)
             if mvel > 0: 
                 pos_vel.append(mvel)
             else: 
-                neg_vel.append(mvel)    
-            
-    volplus =  CrossArea[adptype]*numpy.sum(numpy.array(pos_vel)*dt0)*84600   
-    volminus =  CrossArea[adptype]*numpy.sum(numpy.array(neg_vel)*dt0)*84600
+                neg_vel.append(mvel)
 
+    if returnQ == False:
+        return all_vel
+
+    volplus =  CrossArea[adptype]*numpy.sum(numpy.array(pos_vel)*dt0)*84600
+    volminus =  CrossArea[adptype]*numpy.sum(numpy.array(neg_vel)*dt0)*84600
     print("Loc=%s Vol+=%f m^3  Vol-=%f m^3" % (adptype, volplus, volminus))
     qplus=volplus/tottime 
     qminus=volminus/tottime
@@ -1170,6 +1210,9 @@ def calc_velocities(adptype, date, avg=True, interv = 1, resampled =False, delft
     fname = paths[5] + "/"+ adptype+"volumes.csv"
     data = [adptype, date, qplus, qminus]
     hyd.writeVeltoCSV(fname, data, append = True, delft3d=delft3d)
+
+
+
     return qplus, qminus
 
 
@@ -1239,6 +1282,8 @@ def calc_velocities_by_dh(adptype, date, avg=True, interv = 1, resampled =False,
     volplus=0
     volminus=0
     tottime=0
+    qtsfname = paths[5] + "/" + adptype + "_q_DZDT_TS.csv"
+    print("Writing Q TS to file: %s " % (qtsfname))
     Z=0  #trebitz initial sum
     for i in range(0, len(dates1)-1):
         dz = depths1[i+1]-depths1[i]
@@ -1248,6 +1293,9 @@ def calc_velocities_by_dh(adptype, date, avg=True, interv = 1, resampled =False,
             V=area*Z
             qplus=V/tottime 
             qminus=V/tottime
+            dt = num2date(dates1[i])
+            datestr = dt.strftime("%Y-%m-%d %H:%M:%S")
+            rdradcp.plot_ADCP_velocity.writeVeltoCSV(qtsfname, [datestr, qplus], append=True)
         else:
             V=area*dz
               
@@ -1426,15 +1474,29 @@ def convert_tempchain_data_for_lakeStability(harbour_path=None, writepath=None, 
 
     return [rDateTimeArr, rResultsArr, rTempArr]
 
+def interpolateData(interval, time, temp):
+    '''
+    Interpolate the data from hourly to "interval"
+    '''
+    ratio = (time[2]-time[1])*86400 / (interval*60)
 
-def subplot_lake_harbour(str_date, date, adptype, just_lake=False):
+    # interpolated pressure values
+    tempinterp = numpy.zeros(len(temp), dtype = numpy.ndarray)
+    dateTimeInterp = numpy.interp(numpy.linspace(time[1], time[len(time)-1], int(ratio * len(time))), time, time)
+    for i in range(0, len(temp)):
+         tempinterp[i]= numpy.interp(numpy.linspace(time[1], time[len(time)-1], int(ratio * len(time))), time, temp[i])
+
+    return [dateTimeInterp, tempinterp]
+
+def subplot_lake_harbour(str_date, date, adptype, just_lake=False, delft3d=True):
     resampled =False
     locale.setlocale(locale.LC_TIME, 'en_US.UTF-8')
 
     water_path = '/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Hobo-Apr-Nov-2013/TC-LakeOntario/csv_processed'
-    water_path = '/home/bogdan/Documents/UofT/PhD/Data_Files/2012/MOE-Apr-May_2012-Thermistor_chain/csv_processed'
+    #water_path = '/home/bogdan/Documents/UofT/PhD/Data_Files/2012/MOE-Apr-May_2012-Thermistor_chain/csv_processed'
     harbour_path = '/home/bogdan/Documents/UofT/PhD/Data_Files/2013/Hobo-Apr-Nov-2013/AllHarbour/csv_processed/EGap-JarvisDock'
-    water_path = '/home/bogdan/Documents/UofT/PhD/Data_Files/2015/loboviz2-temp/csv_processed'
+    #water_path = '/home/bogdan/Documents/UofT/PhD/Data_Files/2015/loboviz2-temp/csv_processed'
+    water_path = '/home/bogdan/Documents/UofT/PhD/Data_Files/2016/Hobo-TempChains-2016/csv/Egap/csv_processed'
     print("Start subplot_lake_harbour ")
     start_num = date[0]
     end_num = date[1]
@@ -1498,6 +1560,42 @@ def subplot_lake_harbour(str_date, date, adptype, just_lake=False):
     [dateTimeArr, resultsArr, tempArr, TH_dateTimeArr, TH_resultsArr, TH_tempArr] = \
         read_lake_and_harbour_data(str_date, date, water_path, harbour_path, just_lake)
 
+    # Process 3 minutes interval for 5 depths and write in a csv file
+    if delft3d:
+        splittemp = numpy.split(tempArr, [5,10,15,20])
+        t = numpy.zeros(len(splittemp), dtype=numpy.ndarray)
+        for i in range(0, len(splittemp)):
+            t[i] = numpy.mean(splittemp[i], axis=0, dtype=numpy.ndarray)
+
+        #interpolate for 3 min
+        [time3min, temp3min] = interpolateData(3, dateTimeArr[0], t)
+
+        # Write in a csv file
+        path_out = "/home/bogdan/Documents/UofT/MITACS-TRCA/3DModel/Input_data/Water-temperature-at-boundary"
+        ofile = open(path_out + '/' + "RiverTemp-3min.tim", "w")
+        writer = csv.writer(ofile, delimiter='\t', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+        for i in range(0, len(temp3min[0])):
+            #writer.writerow([round((time3min[i]- time3min[0])*86400), temp3min[0][i], temp3min[1][i], temp3min[1][i], \
+            writer.writerow([int(round((time3min[1] - time3min[0]) * 86400) * i), temp3min[0][i]])
+            #writer.writerow([int(round((time3min[1] - time3min[0]) * 86400)*i), temp3min[0][i], temp3min[1][i],
+            #                 temp3min[1][i], temp3min[3][i], temp3min[4][i]])
+        ofile.close()
+        maxdepth = 27
+        firstlogdepth = 3
+        maxtemp = 26
+        mintemps = 0
+        mindepths = 0
+        t31 = ['0', '6', '13', '20', '27']
+        t32 = [27, 20, 13.5, 6.5, 0]
+        tick = [t31, t32]
+        datetype = 'dayofyear'
+        time3minArr = numpy.zeros(len(temp3min), dtype=numpy.ndarray)
+        time3minArr[0] = time3minArr[1] = time3minArr[2] = time3minArr[3] = time3minArr[4] = time3min
+        utools.display_data.display_img_temperatures(time3minArr, temp3min, temp3min, 1, tick, maxdepth, firstlogdepth,
+                                                     maxtemp, fontsize=18, datetype=datetype, thermocline=True,
+                                                     interp=None, ycustom=None, cblabel="T [$^\circ$C]",
+                                                     draw_hline=False, hline_freq=2)
+
     if not just_lake: 
         # 2'') read temperature diff at TC4
         diffpath = water_path + "/../../TC-OuterHarbour/colormap"
@@ -1529,15 +1627,26 @@ def subplot_lake_harbour(str_date, date, adptype, just_lake=False):
             
         #limits = [None, None, [-1, 10], None, None ] <= this datesscrews up the tickers 
         limits = None
-            
-        maxdepth = 27
-        firstlogdepth = 3
-        maxtemp = 26
-        mintemps = 0
-        mindepths = 0
-        t31 = ['0', '6', '13', '20', '27']
-        t32 = [27, 20, 13.5, 6.5, 0]
-        tick = [t31, t32]
+
+        EGap = True
+        if EGap:
+            maxdepth = 8
+            firstlogdepth = 1
+            maxtemp = 30
+            mintemps = 0
+            mindepths = 0
+            t31 = ['0', '2', '4', '6', '8']
+            t32 = [8, 6, 4, 2, 0]
+            tick = [t31, t32]
+        else:
+            maxdepth = 27
+            firstlogdepth = 3
+            maxtemp = 26
+            mintemps = 0
+            mindepths = 0
+            t31 = ['0', '6', '13', '20', '27']
+            t32 = [27, 20, 13.5, 6.5, 0]
+            tick = [t31, t32]
 
         # trim all the arrays to the min size
         ms = len(dateTimeArr[0])
@@ -1550,7 +1659,7 @@ def subplot_lake_harbour(str_date, date, adptype, just_lake=False):
             tempArr[i] = tempArr[i][:ms]
         
         utools.display_data.display_img_temperatures(dateTimeArr, tempArr, resultsArr, 1, tick, maxdepth, firstlogdepth, maxtemp, \
-                                                     fontsize = 18, datetype = datetype, thermocline = True, interp = None, \
+                                                     fontsize = 18, datetype = datetype, thermocline = True, interp = 2, \
                                                      ycustom = None, cblabel = "T [$^\circ$C]", draw_hline = False, hline_freq = 2)
 
 
@@ -1612,18 +1721,107 @@ def subplot_lake_harbour(str_date, date, adptype, just_lake=False):
                               title = False, grid = False, limits = limits, sharex = True, fontsize = 18, group_first = False, interp = 2)
     #end if
 
+#
+def subplot_Loboviz2(str_date, date):
+    """
+    
+    :param str_date: 
+    :param date: 
+    :return: 
+    """
+    resampled = False
+    locale.setlocale(locale.LC_TIME, 'en_US.UTF-8')
+    matplotlib.mathtext.SHRINK_FACTOR = 0.9
+
+    path = '/home/bogdan/Documents/MOECC/DataFiles/2016/csv_processed'
+    filename = "ADCP-10Sept2016-20Nov2016-ENU+T.csv"
+    filename = "ADCP-Jan2015-Dec2015-ENU+T.csv"
+
+    print("Start sublpot_Loboviz2 ")
+    start_num = date[0]
+    end_num = date[1]
+
+    maxdepth = 20
+
+    [temp, dateTime, datenum, east, north, up] = Hydrodynamic.Hydrodynamic.read_Loboviz2datefile(path, filename)
+    print(up)
+    # transpose
+    east_T = numpy.array(east, dtype=numpy.float).transpose()
+    north_T = numpy.array(north, dtype=numpy.float).transpose()
+    up_T = numpy.array(up, dtype=numpy.float).transpose()
+
+    # Time domain analysis
+    lowcut = 1.0 / (24 * 10) / 3600
+    highcut = 1.0 / (24 * 3) / 3600
+    tunits = 'day'
+
+    if tunits == 'day':
+        factor = 86400
+    elif tunits == 'hour':
+        factor = 3600
+    else:
+        factor = 1
+
+    # 3) Mixed water, air ,img data
+    custom = numpy.array(['Water level', ])
+    ndate = numpy.array(datenum).astype(numpy.float)
+    dateTimes = []
+    for i in range(0, len(east_T)):
+        dateTimes.append(ndate)
+
+    ndateTimes = numpy.array(dateTimes)
+
+    dateTimes3 = [ndateTimes, ndateTimes, ndateTimes]
+    # and convert to m/s  from mm/s
+    imgs = [east_T/1000., north_T/1000., up_T/1000.]
+
+    ylabels3 = ["Depth [m]", "Depth [m]", "Depth [m]"]
+    t11 = ['0', '5', '10', '15', '20']
+    t12 = [20, 15, 10, 5, 0]
+    t21 = ['0', '5', '10', '15', '20']
+    t22 = [20, 15, 10, 5, 0]
+    t31 = ['0', '5', '10', '15', '20']
+    t32 = [20, 15, 10, 5, 0]
+    maxdepth = [20,20,20]
+    firstlogdepth = [2, 2, 2]
+    mindepths = [0, 0, 0, 0]
+    #maxtemp = [0.5, 0.5, 30]
+    #mintemps = [-0.5, -0.5, -30]
+    maxtemp = [0.2, 0.2, 0.05]
+    mintemps = [-0.2, -0.2, -0.05]
+
+    tick = [[t11, t12], [t21, t22], [t31, t32]]
+    limits = None
+
+    clabel = [r'$\mathsf{U}$ [$\mathsf{m\ s^{-1}}$]',
+              r'$\mathsf{V}$ [$\mathsf{m\ s^{-1}}$]',
+              r'$\mathsf{W}$ [$\mathsf{m\ s^{-1}}$]',]
+
+    limits1 = None
+    yday = True
+    # utools.display_data.display_mixed_subplot(dateTimes1 = [rtime[:-1]], data = [rdzdt[:-1]], varnames = [],
+    #                                          ylabels1 = [r"dZ dt$^{-1}$ [$\mathsf{m\ h^{-1}}$]"], limits1 = limits1,
+    utools.display_data.display_mixed_subplot(dateTimes1=[], data=[], varnames=[],
+                                              ylabels1=[], limits1=limits1,
+                                              dateTimes2=[], groups=[], groupnames=[], ylabels2=[],
+                                              dateTimes3=dateTimes3, imgs=imgs, ylabels3=ylabels3,
+                                              ticks=tick, maxdepths=maxdepth,
+                                              mindepths=mindepths, mintemps=mintemps, firstlogs=firstlogdepth,
+                                              maxtemps=maxtemp,
+                                              fnames=None, revert=True, custom=None, maxdepth=None,
+                                              tick=None, firstlog=None, yday=yday,
+                                              title=False, grid=False, limits=limits, sharex=True,
+                                              fontsize=18, group_first=False, interp=2, cblabel=clabel)
 
 
-def subplot_Dz_ADCP_T_harbour(str_date, date, adptype, one_V = False):
+def subplot_Dz_ADCP_T_harbour(str_date, date, adptype, one_V=False, Temp=False):
     '''
-
-    :param str_date:
+  :param str_date:
     :param date:
     :param adptype:
     :param one_V:
     :return:
     '''
-
     resampled =False
     locale.setlocale(locale.LC_TIME, 'en_US.UTF-8')
     matplotlib.mathtext.SHRINK_FACTOR = 0.9
@@ -1634,8 +1832,6 @@ def subplot_Dz_ADCP_T_harbour(str_date, date, adptype, one_V = False):
     print("Start sublpot_Dz_ADCP_harbour ")
     start_num = date[0]
     end_num = date[1]
-
-    
 
     angles_from_N = {'OH':143, 'EmbC':53,'Cell3':43}      # for counter clockwise  and using vp along 
                                                           #+ direction is TO outer harbour and to Lake Ontario 
@@ -1772,22 +1968,28 @@ def subplot_Dz_ADCP_T_harbour(str_date, date, adptype, one_V = False):
     else:
         factor = 1
 
-    
     # 3) Mixed water, air ,img data
     custom = numpy.array(['Water level', ])
-    
-        
-    
+
     if one_V:
-        
-        if adptype == "Cell3":
-            dateTimes3 = [hyd.time, TH_dateTimeArr]
-            imgs = [vp, TH_resultsArr[::-1]]
+        if Temp:
+            if adptype == "Cell3":
+                dateTimes3 = [hyd.time, TH_dateTimeArr]
+                imgs = [vp, TH_resultsArr[::-1]]
+            else:
+                dateTimes3 = [hyd.time[:-dd], TH_dateTimeArr]
+                imgs = [vp[:-dd], TH_resultsArr[::-1]]
+
+            ylabels3 = ["Depth [m]", "Depth [m]"]
         else:
-            dateTimes3 = [hyd.time[:-dd], TH_dateTimeArr]
-            imgs = [vp[:-dd], TH_resultsArr[::-1]]
-            
-        ylabels3 = ["Depth [m]", "Depth [m]"] 
+            if adptype == "Cell3":
+                dateTimes3 = [hyd.time]
+                imgs = [vp]
+            else:
+                dateTimes3 = [hyd.time[:-dd]]
+                imgs = [vp[:-dd]]
+
+            ylabels3 = ["Depth [m]"]
         
         if adptype == 'OH':
             t11 = ['0', '2', '4.5', '7']
@@ -1798,8 +2000,8 @@ def subplot_Dz_ADCP_T_harbour(str_date, date, adptype, one_V = False):
             #firstlogdepth = [0, 3] Harbour first
             firstlogdepth = [0, 0]
             mindepths = [0, 0]
-            maxtemp = [0.2,  24]
-            mintemps = [-0.2, 0]
+            maxtemp = [0.3,  24]
+            mintemps = [-0.3, 0]
             
         elif adptype == "EmbC" or adptype == "Cell3":
             t11 = ['0', '1.5', '3.0', '4.5']
@@ -1810,10 +2012,9 @@ def subplot_Dz_ADCP_T_harbour(str_date, date, adptype, one_V = False):
             #firstlogdepth = [0, 3] Harbour first
             firstlogdepth = [0, 0]
             mindepths = [0, 0]
-            maxtemp = [0.2, 24]
-            mintemps = [-0.2, 0]
-            
-       
+            maxtemp = [0.3, 24]
+            mintemps = [-0.3, 0]
+
         t41 = ['0', '3', '6', '10']
         t42 = [10, 6, 3, 0]
         
@@ -1821,7 +2022,10 @@ def subplot_Dz_ADCP_T_harbour(str_date, date, adptype, one_V = False):
         
         #limits = [None, None, [-1, 10], None, None ] <= this datesscrews up the tickers 
         limits = None
-        clabel =  ["$V_{alg}$ [$m s^{-1}$]", "Temp [$\circ$ C]"]   
+        if Temp:
+            clabel =  [r"$\mathsf{V_{alg} [m\ s^{-1}}$]", "Temp [$\circ$ C]"]
+        else:
+            clabel = [r"$\mathsf{V_{alg} [m\ s^{-1}}$]"]
     else:
         if adptype == "Cell3":
             dateTimes3 = [hyd.time, hyd.time, hyd.time, TH_dateTimeArr]
@@ -1866,32 +2070,37 @@ def subplot_Dz_ADCP_T_harbour(str_date, date, adptype, one_V = False):
             mindepths = [0, 0, 0, 0, 0]
             maxtemp = [0.2, 0.2, 0.05, 24]
             mintemps = [-0.2, -0.2, -0.05, 0]
-            
-       
+
         t41 = ['0', '3', '6', '10']
         t42 = [10, 6, 3, 0]
         
         tick = [[t11, t12], [t21, t22], [t31, t32], [t41, t42]  ]
         
-        #limits = [None, None, [-1, 10], None, None ] <= this datesscrews up the tickers 
+        #limits = [None, None, [-1, 10], None, None ] <= this datesscrews up the tickers
+
         limits = None
+
         clabel = [r'$\mathsf{U_{alg}}$ [$\mathsf{m\ s^{-1}}$]',
                    r'$\mathsf{V_{crs}}$ [$\mathsf{m\ s^{-1}}$]',
                    r'$\mathsf{dV\ dz^{-1}}$ [$\mathsf{s^{-1}}$]',
                    r'$\mathsf{T_{water}}$ [$^\circ$C]']
-    
-    
-    utools.display_data.display_mixed_subplot(dateTimes1 = [rtime[:-1]], data = [rdzdt[:-1]], varnames = [],
-                                              ylabels1 = [r"dZ dt$^{-1}$ [$\mathsf{m\ h^{-1}}$]"], limits1 = limits1,
+
+    limits1 = None
+    yday = True
+    #utools.display_data.display_mixed_subplot(dateTimes1 = [rtime[:-1]], data = [rdzdt[:-1]], varnames = [],
+    #                                          ylabels1 = [r"dZ dt$^{-1}$ [$\mathsf{m\ h^{-1}}$]"], limits1 = limits1,
+    utools.display_data.display_mixed_subplot(dateTimes1 = [rtime[:-1]], data = [rdepths[:-1]+1], varnames = [],
+                                              ylabels1 = [r"Z [$\mathsf{m}$]"], limits1 = limits1,
                                               dateTimes2 = [], groups = [], groupnames = [], ylabels2 = [],
                                               dateTimes3 = dateTimes3, imgs = imgs, ylabels3 = ylabels3,
                                               ticks = tick, maxdepths = maxdepth,
                                               mindepths=mindepths, mintemps=mintemps, firstlogs=firstlogdepth,
                                               maxtemps = maxtemp,
                                               fnames = None, revert = True, custom = None, maxdepth = None,
-                                              tick=None, firstlog=None, yday=True,
+                                              tick=None, firstlog=None, yday=yday,
                                               title = False, grid=False, limits=limits, sharex=True,
-                                              fontsize=18, group_first=False, interp=2, cblabel=clabel)
+                                              fontsize=16, group_first=False, interp=2, cblabel=clabel)
+    #fontsize = 18, group_first = False, interp = None, cblabel = clabel)
     
 if __name__ == '__main__':
 
@@ -1913,20 +2122,22 @@ if __name__ == '__main__':
     #v = 'hodographs'
     #v = 'windrose_vel'
     #v = 'dz_dt'
-    v = 'subpl_wl_dz_vel'
-    v = 'vel-profiles'
+    #v = 'subpl_wl_dz_vel' #DZ and ADCP image plot
+    #v = 'vel-profiles'
     #v = 'wl_fft_all'
     #v = 'vel_fft_pairs'
     #v = 'temp_fft'
-    v = 'wl_fft_pairs'
-    #v = 'plot_fft_v_T_wl'
+    #v = 'wl_fft_pairs'
+    #v = 'plot_fft_v_T_wl' # the spectral analyses
     #v = 'calc_vel_flush'
     #v = 'calc_vel_flush_dh'
+    #v = 'plot_Q_Adcp_WL'
     #v = 'temp_fft_all'
     #v = 'conv_wl_delft3d_min'
     #v = 'ctd'
     #v = "subplot_lake_harbour"
     #v = 'subplot_Dz_ADCP_T_harbour'
+    #v = 'subplot_Loboviz2'
     #v = 'subplot_Temp_OH_2015'
     #v = "wct_v_t"
     #v = 'avg-vel-profiles'
@@ -1934,6 +2145,8 @@ if __name__ == '__main__':
     #v = 'calc_delft3d_vel'
     # v = "stddev_T"
     # v = "convert_data_for_lakeStability"
+    #v = 'ADCP_2016'
+    v= 'ADCP_2013'
 
     # map the inputs to the function blocks
     for case in switch(v):
@@ -1945,8 +2158,8 @@ if __name__ == '__main__':
             break
         if case('wl_fft_pairs'):
             dates = ['13/08/03 00:00:00', '13/08/04 00:00:00']
-            dates = ['13/06/06 00:00:00', '13/10/07 00:00:00']
-            dates = ['13/08/07 00:00:00', '13/08/08 00:00:00']   #for model output discharge
+            #dates = ['13/06/06 00:00:00', '13/10/07 00:00:00']
+            #dates = ['13/08/07 00:00:00', '13/08/08 00:00:00']   #for model output discharge
             WL_FFT_pairs(dateinterval=dates)
             break
         if case('vel_fft_pairs'):
@@ -2071,24 +2284,29 @@ if __name__ == '__main__':
             location = "EmbC"
             location = "Cell3"
             wl = True
+            dz_dt = False
             plot_int = 1./6. # in hours -> 1/6 =10 minutes
-            subpl_wl_dz_vel(date, location, resampled, hourgrid, doy = DOY, img=img, cbrange=[-0.4,0.4],
-                            wl=wl, plot_interval=plot_int)
+            subpl_wl_dz_vel(date, location, resampled, hourgrid, doy = DOY, img=img, cbrange=[-0.3,0.3],
+                            wl=wl, dz_dt=dz_dt, plot_interval=plot_int)
             break
         if case ('plot_fft_v_T_wl'):
             date = ['13/06/25 00:00:00', '13/08/16 00:00:00']    # TOO LONG
-            location = "OH"
+            import matplotlib.pyplot as plt
             location ="Cell3"
-            #location="EmbC"
             drawslope = False
             plot_FFT_V_T_WL(location, date, scale = 'log', drawslope = drawslope)
+            location="EmbC"
+            plot_FFT_V_T_WL(location, date, scale='log', drawslope=drawslope)
+            location = "OH"
+            plot_FFT_V_T_WL(location, date, scale='log', drawslope=drawslope)
+            plt.show()
             break
         if case ('calc_delft3d_vel'):
             date = ['13/08/01 00:00:00', '13/08/31 00:00:00']    # TOO LONG
             interv = 3 #min
             loc="OH"
             loc="Cell3"
-            #loc="EmbC"
+            loc="EmbC"
             get_delft3d_velocities(date, adptype = loc, interv=interv)
             break
         
@@ -2131,6 +2349,43 @@ if __name__ == '__main__':
             trebitz=True
             calc_flush_time_by_dh(loc, date, level, avg=avg, interv = interv, resampled =False, trebitz=trebitz)
             break
+        if case ('plot_Q_Adcp_WL'):
+            daterange = ['13/06/25 00:00:00', '13/08/16 00:00:00']  # TOO LONG
+            daterange = ['13/07/10 00:00:00', '13/07/28 23:00:00']  # Upwelling
+            daterange = ['13/07/29 00:00:00', '13/08/12 23:00:00']  # NO Upwelling
+            loc = "EmbC"
+            loc = "Cell3"
+            avg = True # False calculat the vel per veritcal slice; True = calucalte one avg vel per whole section
+            interv = 1  # hours
+            depth_avg_vel = calc_velocities(loc, daterange, avg=avg, interv=interv, resampled=False, returnQ=False)
+            num_segments = 10
+            pairs = {'Cell1': ["Cell1", "Cell2"],
+                     'Cell2': ["Cell2", "Cell3"],
+                     'Cell3': ["Cell3", "EmbC"],
+                     'EmbC': ["EmbC", "OH"],
+                     'OH': ["OH", "LO"],
+                     'EmbA': ["EmbA", "OH"],
+                     'EmbB': ["EmbB", "OH"]}
+            #factor = 6.    # 10 minutes  in days
+            factor = 1.  # 1 hour in days
+            dt = 1. / 24. / factor
+            wla1, rtime1, rdepths1, rdzdt1, dates1, depths1, dzdt1 = get_Dz_Dt(pairs[loc][0], paths[1],
+                                                                               num_segments, daterange, dt)
+            #plot a dual graph WL and Velocity
+            # plot depths1 & dept_avg_vel
+            ylabel1 = ("dz/dt [ms$^{-1}$]")
+            ylabel2 = ("Depth avg. velocity [ms$^{-1}$]")
+            label1 = "dz/dt (Logger)"
+            label2 = "V (ADCP)"
+            utools.display_data.display_twinx(dates1[:-1], numpy.array(dzdt1[:-1])/100, numpy.array(depth_avg_vel)*1.38,
+                                                label1, label2, ylabel1, ylabel2, loc=3)
+            #normalize data
+            ndzdt=utools.display_data.normalize_ts(numpy.array(dzdt1[:-1]))
+            navg_vel = utools.display_data.normalize_ts(numpy.array(depth_avg_vel))
+            utools.display_data.display_scatter(ndzdt, navg_vel, slope=True, type='stats',
+                                                labels=["Normalized dz/dt", "Normalized Depth Avg. Velocity"],
+                                                fontsize=20)
+            break
         if case ("conv_wl_delft3d_min"):
             date = ['13/06/25 00:00:00', '13/08/16 00:00:00']    # TOO LONG
             start_WL = {'13/06/25 00:00:00':75.16}
@@ -2146,14 +2401,17 @@ if __name__ == '__main__':
             break
         if case ("subplot_lake_harbour"):
             #for Liset 2012
-            date = ['12/06/15 00:00:00', '12/09/30 00:00:00']
-            date = ['15/06/01 12:30:00', '15/11/04 12:30:00']
+            date = ['12/06/15 00:00:00', '12/09/30 00:00:00']  # for 2013
+            #date = ['15/06/01 12:30:00', '15/11/04 12:30:00'] # FOR 2015
+            #date = ['13/06/01 12:30:00', '13/11/04 12:30:00']
+            date = ['13/08/01 00:00:00', '13/09/01 00:00:00']   # for Delft3D simulation
+            date = ['16/06/20 00:00:00', '16/10/30 00:00:00']  # for 2016 data in Toronto Harbour
             dt = datetime.strptime(date[0], "%y/%m/%d %H:%M:%S")
             start_num = dates.date2num(dt)
             dt = datetime.strptime(date[1], "%y/%m/%d %H:%M:%S")
             end_num = dates.date2num(dt)
             adptype = "EmbC"
-            subplot_lake_harbour(date, [start_num, end_num], adptype, just_lake=True)
+            subplot_lake_harbour(date, [start_num, end_num], adptype, just_lake=True, delft3d=False)
             break
         if case ("subplot_Dz_ADCP_T_harbour"):
             dt = datetime.strptime(date[0], "%y/%m/%d %H:%M:%S")
@@ -2162,8 +2420,18 @@ if __name__ == '__main__':
             end_num = dates.date2num(dt)
             adptype = "Cell3"
             #adptype = "OH"
-            one_V = True
-            subplot_Dz_ADCP_T_harbour(date, [start_num, end_num], adptype, one_V)
+            adptype = "EmbC"
+            one_V = False
+            Temperature = False
+            subplot_Dz_ADCP_T_harbour(date, [start_num, end_num], adptype, one_V, Temp=Temperature)
+            break
+        if case ("subplot_Loboviz2"):
+            date = ['16/09/15 00:00:00', '16/11/15 00:00:00']  # for 2016 data in Toronto Harbour
+            dt = datetime.strptime(date[0], "%y/%m/%d %H:%M:%S")
+            start_num = dates.date2num(dt)
+            dt = datetime.strptime(date[1], "%y/%m/%d %H:%M:%S")
+            end_num = dates.date2num(dt)
+            subplot_Loboviz2(date, [start_num, end_num])
             break
         if case ("subplot_Temp_OH_2015"):
             date = ['15/06/11 12:30:00', '15/11/4 12:30:00']
@@ -2257,8 +2525,8 @@ if __name__ == '__main__':
                       "C2": [[2.1, 0.8, 10.4, 20.34], stddev["C2"]],          # res 1.1 ->2.1 
                       "C3": [[6.9,  6.1, 5.9, 15.3], stddev["C3"]],           # res 6 -> 6.9  dept 6.8 -> 6.1 mean deltaT 9->4.5 temp 19->14.5         
                       "EA": [[1.3, 2.6, 2.5, 12.36], stddev["EA"]],
-                      "Ah": [[2.6, 2.6, 2.5, 12.36], stddev["Ah"]],
-                      "Al": [[3.0, 2.6, 2.5, 12.36], stddev["Al"]],
+                      #"Ah": [[2.6, 2.6, 2.5, 12.36], stddev["Ah"]],
+                      #"Al": [[3.0, 2.6, 2.5, 12.36], stddev["Al"]],
                       "EB": [[0.6, 1.19, 8.6, 18.5], stddev["EB"]],           #
                       "EC": [[2.8, 3.3, 3.0, 12.8], stddev["EC"]],
                       "OH": [[3.2, 8.9, 1.7, 11.4], stddev["OH"]],             # mean temp an average of 3  
@@ -2282,17 +2550,85 @@ if __name__ == '__main__':
                                                      range_x =range_x, range_y=range_y,
                                                      fontsize = 20,  chains = chains, exclusions =["LO", "EB"]  )
             break
-        
+
+        if ("ADCP_2013"):
+            from rdradcp.readRawBinADCP import readRawBinADCP
+            adcpMOECC2013 = "/software/SAGEwork/Calibration-LakeOntario/"
+            fname_ensno = {"3172K000.000": 10757}
+            #fname_ensno = {"3224K000.000": 10757}
+            location_dict = {"3172K000.000": "Oshw"}
+            #location_dict = {"3224K000.000": "Oshw"}
+            firstbins = {"Oshw": 2.1}
+            intervals = {"Oshw": 1.0}
+            num_segments = 10
+            tinterv = ['13/04/09 00:00:00', '13/11/04 23:00:00']
+
+            for fname in fname_ensno:
+                ensno = fname_ensno[fname]
+                location = location_dict[fname]
+                firstbin = firstbins[location]
+                interval = intervals[location]
+                adcp = readRawBinADCP("/software/SAGEwork/Calibration-LakeOntario/3172K000.000", 1, [700, 10757],
+                #adcp=readRawBinADCP("/software/SAGEwork/Calibration-LakeOntario/3224K000.000", 1, [700, 10000],
+                                        'info', 'yes', 'baseyear', 2000, 'despike', 'yes', 'debug', 'no')
+                adcpTxt = adcpTxt.RdiDataWriter(adcpMOECC2013, adcp, n=ensno, fname=fname)
+                adcpTxt.writeAdcp(fname)
+            break
+
+        if ("ADCP_2016"):
+
+            # Read the TXT data first
+            adcpPath2016 = "/home/bogdan/Documents/UofT/PhD/Data_Files/2016/ADCP2016_Data/ADCP-files/"
+
+            fname_ensno = {"EC01_000.000":19911, "EG01_000.000":68894, "OH01_002.000":54578,
+                           "TI01_000.000":68920, "WG01_000.000":10448}
+            location_dict = {"EC01_000.000": "EmbC", "EG01_000.000": "EGap", "OH01_002.000": "OH",
+                           "TI01_000.000": "TI", "WG01_000.000":"WGap"}
+            firstbins = {"EGap": 2.0, "EmbC": 1.6, "OH": 3.0, "TI": 2.0, "WGap": 2.0}
+            intervals = {"EGap": 1.0, "EmbC": 0.6, "OH": 1.0, "TI": 1.0, "WGap": 1.0}
+
+            fname_ensno = {"3172K000.000": 10757}
+            location_dict = {"3172K000.000": "Oshw"}
+            firstbins = {"Oshw": 2.1}
+            intervals = {"Oshw": 1.0}
+
+
+            num_segments = 10
+
+            #tinterv = ['16/06/29 00:00:00', '16/11/01 23:00:00']
+            tinterv = ['13/04/09 00:00:00', '13/11/04 23:00:00']
+
+            for fname in fname_ensno:
+                ensno = fname_ensno[fname]
+                location = location_dict[fname]
+                firstbin = firstbins[location]
+                interval = intervals[location]
+
+                if fname == "3172K000.000":
+                    adcpTxt2 = adcpTxt.RdiDataWriter(adcpMOECC2013, None, n=ensno, fname=fname)
+                else:
+                    adcpTxt2 = adcpTxt.RdiDataWriter(adcpPath2016, None, n=ensno, fname=fname)
+                adcp2 = adcpTxt2.readAdcp(fname)
+
+                if fname == "3172K000.000":
+                    adcp2.writeAdcp(fname, adcp, delimiter=',')
+                else:
+                    hyd =  Hydrodynamic.Hydrodynamic(fname, location, adcpPath2016, num_segments, tinterv)
+                    hyd.Vel_profiles_2016_ADCP(date, adptype=location, firstbin=1, interval=1,
+                                               ADCPprof=True, grad_valong=True, adcp=adcp2)
+            break
+
         if ("stddev_T"):
-            filenames=["Cell_1A.csv","Cell2.csv","Cell3.csv","Stn14.csv","Stn13.csv", "EmbC.csv", "Stn20.csv", "LO_10_2393006.csv"]
-            
-            tinterv = ["13/06/01 00:00:00","13/09/01 00:00:00"]
-            temp = Temperature.Temperature(paths[7], filenames, 3, tinterv = tinterv)
+            filenames = ["Cell_1A.csv", "Cell2.csv", "Cell3.csv", "Stn14.csv", "Stn13.csv", "EmbC.csv", "Stn20.csv",
+                         "LO_10_2393006.csv"]
+
+            tinterv = ["13/06/01 00:00:00", "13/09/01 00:00:00"]
+            temp = Temperature.Temperature(paths[7], filenames, 3, tinterv=tinterv)
             stddev = temp.stddev()
-            i=0
+            i = 0
             for f in filenames:
-                print ("Fname:%s, minSD:%f, maxSD:%f" % (f, stddev[i][0],stddev[i][1]))
-                i+=1 
+                print("Fname:%s, minSD:%f, maxSD:%f" % (f, stddev[i][0], stddev[i][1]))
+                i += 1
             break
         if case():  # default, could also just omit condition or 'if True'
             
